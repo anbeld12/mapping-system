@@ -1,0 +1,198 @@
+{
+  "info": {
+    "name": "Mapping System API",
+    "_postman_id": "mapping-system-collection",
+    "description": "Colección de pruebas para API del sistema de mapeo geoespacial",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Map - GET /api/map",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/map?bbox=-74.1,4.5,-74.0,4.6",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "map"
+          ],
+          "query": [
+            {
+              "key": "bbox",
+              "value": "-74.1,4.5,-74.0,4.6"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Blocks - POST /api/blocks",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test Block\",\n  \"capture_method\": \"gps\",\n  \"geom\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [[[ -74.05, 4.55 ], [ -74.0495, 4.55 ], [ -74.0495, 4.5505 ], [ -74.05, 4.5505 ], [ -74.05, 4.55 ]]]\n  },\n  \"division_points\": [[ -74.05, 4.55 ], [ -74.0495, 4.55 ], [ -74.0495, 4.5505 ]]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/blocks",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "blocks"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Sync - POST /api/sync",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"changes\": [\n    {\n      \"entity_type\": \"block\",\n      \"entity_id\": \"00000000-0000-0000-0000-000000000001\",\n      \"operation\": \"UPDATE\",\n      \"data\": { \"name\": \"Updated offline\" }\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sync",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sync"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Neighborhoods - POST /api/neighborhoods",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Barrio Test\",\n  \"geom\": {\n    \"type\": \"Polygon\",\n    \"coordinates\": [[[ -74.06, 4.55 ], [ -74.059, 4.55 ], [ -74.059, 4.551 ], [ -74.06, 4.551 ], [ -74.06, 4.55 ]]]\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/neighborhoods",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "neighborhoods"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Export - GET /api/export/geojson",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/export/geojson",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "export",
+            "geojson"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Export - GET /api/export/csv",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/export/csv",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "export",
+            "csv"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "CORS check (blocked origin)",
+      "event": [],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Origin",
+            "value": "http://not-allowed.example.com"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/map?bbox=-74.1,4.5,-74.0,4.6",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "map"
+          ],
+          "query": [
+            {
+              "key": "bbox",
+              "value": "-74.1,4.5,-74.0,4.6"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

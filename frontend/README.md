@@ -1,16 +1,48 @@
-# React + Vite
+# Frontend — Mapping System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación React con Vite, React-Leaflet y soporte offline (IndexedDB).
 
-Currently, two official plugins are available:
+## Requisitos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js v18+
+- Backend corriendo (ver [../backend/README.md](../backend/README.md))
 
-## React Compiler
+## Instalación
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+```
 
-## Expanding the ESLint configuration
+## Variables de entorno
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Crear un archivo `.env` en la raíz del directorio `frontend/`:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+En producción reemplazar con la URL del servidor backend desplegado.
+
+## Desarrollo
+
+```bash
+npm run dev
+```
+
+La aplicación estará en `http://localhost:5173`.
+
+## Producción
+
+```bash
+npm run build      # Genera la carpeta dist/
+npm run preview    # Previsualizar la build localmente
+```
+
+## Funcionalidades principales
+
+- **Mapa interactivo**: visualización de cuadras, viviendas y barrios con React-Leaflet.
+- **Captura GPS**: caminata con Dead Reckoning (estimación por pasos cuando el GPS es débil).
+- **Modo offline**: datos guardados en IndexedDB y sincronizados automáticamente al recuperar conexión.
+- **Gestión de barrios**: crear, renombrar y editar geométricamente barrios desde el panel lateral.
+- **Colores por barrio**: cada barrio tiene un color distintivo generado a partir de su ID.
+- **Exportar datos**: exportación en GeoJSON, CSV y reportes PDF.
