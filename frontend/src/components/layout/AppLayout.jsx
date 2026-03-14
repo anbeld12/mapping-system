@@ -3,31 +3,41 @@ import { Button } from "../ui/button";
 import { Menu } from "lucide-react";
 import { useUIState } from "../../context/UIStateContext";
 
-const AppLayout = ({ children, sidebar }) => {
+const AppLayout = ({ children, sidebar, onExport, statusToolbar }) => {
   const { isSidebarOpen, openSidebar, closeSidebar } = useUIState();
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
-      <Sheet open={isSidebarOpen} onOpenChange={(open) => open ? openSidebar() : closeSidebar()}>
-        <SheetTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="fixed left-4 top-4 z-[1100] bg-background/80 backdrop-blur border"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-full sm:w-[380px] p-0">
-          <SheetHeader className="px-4 py-3 border-b">
-            <SheetTitle>Panel</SheetTitle>
-          </SheetHeader>
-          {sidebar}
-        </SheetContent>
-      </Sheet>
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      {/* Header/Navbar */}
+      <header className="h-16 bg-background border-b border-border flex items-center px-4 z-50">
+        <h1 className="text-xl font-semibold">Sistema de Mapeo Geoespacial - Acueducto de Bogotá</h1>
+        <div className="ml-auto flex gap-2">
+          {onExport && (
+            <Button variant="secondary" onClick={onExport}>
+              📤 Exportar / Reportes
+            </Button>
+          )}
+        </div>
+      </header>
 
-      <div className="w-full h-screen overflow-hidden">
-        {children}
+      {/* Main content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-80 bg-background border-r border-border overflow-y-auto">
+          {sidebar}
+        </aside>
+
+        {/* Main content area */}
+        <main className="flex-1 relative overflow-hidden flex flex-col">
+          {statusToolbar && (
+            <div className="z-20 h-14 bg-card border-b border-border flex items-center px-4 gap-4 shadow-sm">
+              {statusToolbar}
+            </div>
+          )}
+          <div className="flex-1 relative overflow-hidden">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

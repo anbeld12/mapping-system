@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useToast } from '../hooks/use-toast';
 import '../styles/gpsWalker.css';
 
 // Clase utilitaria para avisos dentro de Card
@@ -26,6 +27,7 @@ const GpsWalker = ({
   stepLength,
   onCalibrate
 }) => {
+  const { toast } = useToast();
   const { 
     currentPosition, 
     path, 
@@ -78,7 +80,7 @@ const GpsWalker = ({
     const delta = stepCount - calibSteps;
     if (delta > 0) {
       onCalibrate(10, delta); // 10 meters constant
-      alert(`Calibrado: ${delta} pasos en 10m. Longitud: ${(10 / delta).toFixed(2)}m`);
+      toast({ title: "Calibración finalizada", description: `${delta} pasos en 10m. Longitud: ${(10 / delta).toFixed(2)}m` });
     }
     setShowCalib(false);
   };

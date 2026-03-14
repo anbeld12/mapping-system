@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { exportService } from '../services/api';
+import { useToast } from '../hooks/use-toast';
 
 const ExportModal = ({ isOpen, onClose, neighborhoods, currentBbox }) => {
+  const { toast } = useToast();
   const [format, setFormat] = useState('geojson');
   const [entities, setEntities] = useState({
     blocks: true,
@@ -47,7 +49,7 @@ const ExportModal = ({ isOpen, onClose, neighborhoods, currentBbox }) => {
       link.click();
       link.remove();
     } catch (err) {
-      alert("Error al exportar: " + err.message);
+      toast({ title: "Error al exportar", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -65,7 +67,7 @@ const ExportModal = ({ isOpen, onClose, neighborhoods, currentBbox }) => {
       link.click();
       link.remove();
     } catch (err) {
-      alert("Error al descargar reporte: " + err.message);
+      toast({ title: "Error al descargar reporte", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }

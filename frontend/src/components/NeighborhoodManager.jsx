@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { MapPin, Pencil, Trash2, Type, Plus, ChevronRight, Target } from "lucide-react";
+import { stringToColor } from "../utils/colorUtils";
 
 const NeighborhoodManager = ({ 
   neighborhoods = [], 
@@ -16,7 +18,9 @@ const NeighborhoodManager = ({
   onPanelClose
 }) => {
   const [openNameDialog, setOpenNameDialog] = useState(false);
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const [createName, setCreateName] = useState("");
   const [targetNb, setTargetNb] = useState(null);
 
   const handleOpenRename = (nb) => {
@@ -27,65 +31,161 @@ const NeighborhoodManager = ({
 
   const handleConfirmRename = () => {
     if (onEditName && targetNb && nameDraft.trim()) {
-      onEditName({ ...targetNb, name: nameDraft.trim() });
+      onEditName(targetNb, nameDraft.trim());
     }
     setOpenNameDialog(false);
   };
 
+  const handleConfirmCreate = () => {
+    if (onCreateMode && createName.trim()) {
+      onCreateMode(createName.trim());
+      setCreateName("");
+      setOpenCreateDialog(false);
+    }
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col h-full space-y-4">
       <div className="flex items-center justify-between">
-        <Button size="sm" onClick={onCreateMode}>+ Nuevo Barrio</Button>
-        <Button size="sm" variant="ghost" onClick={onPanelClose}>Cerrar</Button>
+        <h2 className="text-lg font-semibold tracking-tight">Gestión de Barrios</h2>
+        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onPanelClose}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Barrios</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <ScrollArea className="h-[320px] pr-2">
-            {neighborhoods.length === 0 && (
-              <p className="text-sm text-muted-foreground">No hay barrios en esta zona.</p>
-            )}
-            <div className="space-y-2">
-              {neighborhoods.map(nb => (
+      <Button onClick={() => setOpenCreateDialog(true)} className="w-full justify-start gap-2 shadow-sm">
+        <Plus className="h-4 w-4" /> Nuevo Barrio
+      </Button>
+
+      <ScrollArea className="flex-1 pr-4 -mr-4">
+        <div className="space-y-3 pb-4">
+          {neighborhoods.length === 0 ? (
+            <div className="text-center py-8 border-2 border-dashed rounded-lg bg-muted/30">
+              <MapPin className="h-8 w-8 mx-auto text-muted-foreground opacity-50 mb-2" />
+              <p className="text-sm text-muted-foreground px-4">No hay barrios mapeados en esta extensión del mapa.</p>
+            </div>
+          ) : (
+            neighborhoods.map(nb => {
+              const color = stringToColor(nb.name || nb.id);
+              const isSelected = selectedId === nb.id;
+              
+              return (
                 <div
                   key={nb.id}
                   onClick={() => onSelect(nb)}
-                  className={`flex items-center justify-between rounded-md border px-3 py-2 cursor-pointer hover:bg-muted ${selectedId === nb.id ? 'border-primary bg-muted' : 'border-border'}`}
+                  className={`group relative flex flex-col rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md ${
+                    isSelected ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-border bg-card hover:border-primary/50'
+                  }`}
                 >
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{nb.name || 'Sin nombre'}</span>
-                    <Badge variant="secondary" className="w-fit mt-1">{nb.id?.slice(0,8)}</Badge>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-3 h-3 rounded-full shrink-0 shadow-sm" 
+                        style={{ backgroundColor: color }}
+                      />
+                      <span className="text-sm font-semibold leading-none truncate max-w-[140px]">
+                        {nb.name || 'Sin nombre'}
+                      </span>
+                    </div>
+                    <Badge variant={nb.synced === 0 ? "secondary" : "outline"} className="text-[10px] h-5 px-1.5 uppercase tracking-wider">
+                      {nb.synced === 0 ? "Pendiente" : "Sinc"}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleOpenRename(nb); }} title="Editar nombre">
-                      🔤
+                  
+                  <div className="mt-3 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 hover:bg-background shadow-none"
+                      onClick={(e) => { e.stopPropagation(); onSelect(nb); }}
+                      title="Centrar en mapa"
+                    >
+                      <Target className="h-4 w-4 text-primary" />
                     </Button>
-                    <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); onEdit(nb); }} title="Editar geometría">
-                      ✏️
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 hover:bg-background shadow-none"
+                      onClick={(e) => { e.stopPropagation(); handleOpenRename(nb); }}
+                      title="Editar nombre"
+                    >
+                      <Type className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 hover:bg-background shadow-none text-blue-600 hover:text-blue-700" 
+                      onClick={(e) => { e.stopPropagation(); onEdit(nb); }}
+                      title="Editar límites"
+                    >
+                      <Pencil className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
 
+                  {isSelected && (
+                    <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-full" />
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </ScrollArea>
+
+      {/* Rename Dialog */}
       <Dialog open={openNameDialog} onOpenChange={setOpenNameDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Renombrar barrio</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} placeholder="Nuevo nombre" />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenNameDialog(false)}>Cancelar</Button>
-              <Button onClick={handleConfirmRename}>Guardar</Button>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Nuevo nombre del sector
+              </label>
+              <Input 
+                id="name"
+                value={nameDraft} 
+                onChange={(e) => setNameDraft(e.target.value)} 
+                placeholder="Ej. Bosque Popular"
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmRename()}
+              />
             </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenNameDialog(false)}>Cancelar</Button>
+            <Button onClick={handleConfirmRename}>Guardar cambios</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Dialog */}
+      <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Nuevo Barrio</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="create-name" className="text-sm font-medium leading-none">
+                Nombre del nuevo sector
+              </label>
+              <Input 
+                id="create-name"
+                value={createName} 
+                onChange={(e) => setCreateName(e.target.value)} 
+                placeholder="Nombre del barrio..."
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmCreate()}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Después de asignar el nombre, podrás dibujar el polígono en el mapa.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenCreateDialog(false)}>Cancelar</Button>
+            <Button onClick={handleConfirmCreate}>Comenzar a dibujar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,16 +1,7 @@
-import {
-  MapContainer,
-  TileLayer,
-  Polyline,
-  Marker,
-  GeoJSON,
-  Circle,
-  useMapEvents,
-} from "react-leaflet";
+import { MapContainer, TileLayer, ZoomControl, LayersControl, useMapEvents } from "react-leaflet";
 import { useState, useEffect, useCallback, useRef } from "react";
 import L from "leaflet";
 import * as turf from "@turf/turf";
-import { stringToColor } from "../utils/colorUtils";
 import "@geoman-io/leaflet-geoman-free";
 import "leaflet/dist/leaflet.css";
 import "../styles/editor.css";
@@ -29,11 +20,16 @@ import GpsWalkCard from "../components/layout/GpsWalkCard";
 import EditContextToolbar from "../components/EditContextToolbar";
 import { useUIState } from "../context/UIStateContext";
 import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Card, CardContent } from "../components/ui/card";
 import { useToast } from "../hooks/use-toast";
 import ExportModal from "../components/ExportModal";
 import { geometryEditService } from "../services/geometryEdit";
+
+// Modular Layers
+import NeighborhoodLayer from "./layers/NeighborhoodLayer";
+import BlocksLayer from "./layers/BlocksLayer";
+import GpsWalkLayer from "./layers/GpsWalkLayer";
 
 // Fix Leaflet default icon
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -46,11 +42,6 @@ const DefaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
-
-const BASEMAPS = {
-  OSM: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  SATELLITE: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-};
 
 export default function MapView() {
   const {
@@ -70,7 +61,6 @@ export default function MapView() {
   const [divisionPoints, setDivisionPoints] = useState([]);
   const [bbox, setBbox] = useState(null);
   const [currentBlock, setCurrentBlock] = useState(null);
-  const [basemap, setBasemap] = useState("OSM");
   const [manualMode, setManualMode] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const mapRef = useRef(null);
@@ -192,8 +182,6 @@ export default function MapView() {
     setManualMode(false);
   };
 
-  const handleAcceptPreview = () => setMode("subdivision");
-
   const handleSaveBlock = async () => {
     if (!currentBlock) return;
     const localId = crypto.randomUUID();
@@ -227,7 +215,7 @@ export default function MapView() {
       setMode("view");
       if (bbox) loadData(bbox);
     } catch (err) {
-      alert(err.message);
+      toast({ title: "Error al guardar", description: err.message, variant: "destructive" });
     }
   };
 
@@ -246,7 +234,7 @@ export default function MapView() {
     const { layer, id, entityType, originalData } = selectedElement;
     const newGeom = layer.toGeoJSON().geometry;
     if (!geometryEditService.isValid(newGeom)) {
-      return alert("Geometría inválida. Corrige auto-intersecciones.");
+      return toast({ title: "Geometría inválida", description: "Corrige auto-intersecciones.", variant: "destructive" });
     }
     try {
       if (entityType === "block") {
@@ -289,7 +277,7 @@ export default function MapView() {
       setMode("view");
       if (bbox) loadData(bbox);
     } catch (err) {
-      alert(err.message);
+      toast({ variant: "destructive", title: "Error", description: err.message });
     }
   };
 
@@ -313,7 +301,7 @@ export default function MapView() {
         toast({ title: "Barrio creado", description: name });
         if (bbox) loadData(bbox);
       } catch (err) {
-        alert(err.message);
+        toast({ title: "Error al crear barrio", description: err.message, variant: "destructive" });
       }
     });
   };
@@ -332,42 +320,31 @@ export default function MapView() {
       setNeighborhoods((prev) => prev.map((n) => (n.id === nb.id ? updatedNB : n)));
       if (navigator.onLine) await syncManager.sync();
     } catch (err) {
-      alert(err.message);
+      toast({ title: "Error al renombrar", description: err.message, variant: "destructive" });
     }
   };
 
   const selectedId = selectedElement?.id;
 
-  return (
-    <AppLayout
-      sidebar={
-        <SidebarPanel
-          neighborhoods={neighborhoods}
-          onSelect={(nb) => {
-            if (!nb) return;
-            setSelectedNeighborhoodId(nb.id);
-            if (nb.geometry && mapRef.current) {
-              const bounds = L.geoJSON(nb.geometry).getBounds();
-              mapRef.current.fitBounds(bounds);
-            }
-          }}
-          onCreateMode={() => handleCreateNeighborhood(prompt("Nombre del barrio:"))}
-          onEdit={() => toast({ title: "Edición", description: "Seleccione el polígono en el mapa para editarlo." })}
-          onEditName={(nb) => handleUpdateNeighborhoodName(nb, prompt("Nuevo nombre:", nb.name || ""))}
-        />
-      }
-    >
-      <OfflineIndicator />
-
-      <div className="absolute top-4 left-16 z-[1050] flex gap-2">
-        <Button variant="secondary" onClick={() => setShowExportModal(true)}>
-          📤 Exportar / Reportes
-        </Button>
+  const statusToolbar = (
+    <div className="flex flex-1 items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Badge variant="outline" className="px-3 py-1 bg-muted/30">
+          Modo: <span className="ml-1 font-bold text-primary">{mode.toUpperCase()}</span>
+        </Badge>
+        {mode === "gps" && (
+          <div className="flex items-center gap-2 text-xs font-medium text-blue-600 animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+            GRABANDO RECORRIDO
+          </div>
+        )}
       </div>
 
-      <div className="absolute top-4 right-20 z-[1050] flex flex-wrap gap-2 items-center">
+      <div className="flex items-center gap-2">
         {mode === "view" && (
           <Button
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
             onClick={async () => {
               await sensors.requestPermissions();
               setMode("gps");
@@ -381,18 +358,18 @@ export default function MapView() {
 
         {mode === "preview" && (
           <>
-            <Button onClick={handleAcceptPreview} variant="default">
+            <Button size="sm" onClick={() => setMode("subdivision")} variant="default">
               👍 Aceptar y Editar
             </Button>
-            <Button onClick={() => setMode("gps")} variant="outline">
+            <Button size="sm" onClick={() => setMode("gps")} variant="outline">
               🔄 Reanudar captura
             </Button>
           </>
         )}
 
         {(mode === "subdivision" || mode === "preview") && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Barrio:</span>
+          <div className="flex items-center gap-2 border-l pl-4 ml-2">
+            <span className="text-xs text-muted-foreground font-medium">Asignar Barrio:</span>
             <Select value={selectedNeighborhoodId || ""} onValueChange={(v) => setSelectedNeighborhoodId(v || null)}>
               <SelectTrigger className="w-40 h-9">
                 <SelectValue placeholder="No asignado" />
@@ -411,38 +388,48 @@ export default function MapView() {
 
         {mode === "subdivision" && (
           <>
-            <Button onClick={handleSaveBlock} variant="default">
+            <Button size="sm" onClick={handleSaveBlock} className="bg-green-600 hover:bg-green-700 text-white">
               💾 Guardar y Subdividir
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 setMode("view");
                 setCurrentBlock(null);
                 setDivisionPoints([]);
               }}
-              variant="outline"
+              variant="ghost"
             >
               ❌ Cancelar
             </Button>
           </>
         )}
       </div>
+    </div>
+  );
 
-      <div className="absolute left-4 bottom-4 z-[1050]">
-        <Card className="shadow border">
-          <CardContent className="p-2">
-            <Select value={basemap} onValueChange={setBasemap}>
-              <SelectTrigger className="w-40 h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="OSM">🗺️ Mapa Base</SelectItem>
-                <SelectItem value="SATELLITE">🛰️ Satélite</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      </div>
+  return (
+    <AppLayout
+      statusToolbar={statusToolbar}
+      sidebar={
+        <SidebarPanel
+          neighborhoods={neighborhoods}
+          onSelect={(nb) => {
+            if (!nb) return;
+            setSelectedNeighborhoodId(nb.id);
+            if (nb.geometry && mapRef.current) {
+              const bounds = L.geoJSON(nb.geometry).getBounds();
+              mapRef.current.fitBounds(bounds);
+            }
+          }}
+          onCreateMode={handleCreateNeighborhood}
+          onEdit={() => toast({ title: "Edición", description: "Seleccione el polígono en el mapa para editarlo." })}
+          onEditName={handleUpdateNeighborhoodName}
+        />
+      }
+      onExport={() => setShowExportModal(true)}
+    >
+      <OfflineIndicator />
 
       <ExportModal
         isOpen={showExportModal}
@@ -475,7 +462,7 @@ export default function MapView() {
             setMode("view");
             if (bbox) loadData(bbox);
           } catch (e) {
-            alert(e.message);
+            toast({ title: "Error al eliminar", description: e.message, variant: "destructive" });
           }
         }}
       />
@@ -491,116 +478,42 @@ export default function MapView() {
         onCalibrate={calibrateStepLength}
       />
 
-      <MapContainer center={[4.6097, -74.0817]} zoom={17} style={{ height: "100vh", width: "100%" }}>
-        <TileLayer url={BASEMAPS[basemap]} />
+      <MapContainer center={[4.6097, -74.0817]} zoom={17} className="h-full w-full" zoomControl={false}>
+        <ZoomControl position="bottomright" />
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer checked name="Mapa Callejero">
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Mapa Satelital">
+            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+          </LayersControl.BaseLayer>
+        </LayersControl>
+        
         <MapEvents />
 
-        {neighborhoods.map((nb) => (
-          <GeoJSON
-            key={nb.id}
-            data={nb.geometry || nb.geom}
-            pathOptions={{
-              color: selectedNeighborhoodId === nb.id ? "#9b59b6" : "#8e44ad",
-              fillOpacity: 0.05,
-              weight: selectedNeighborhoodId === nb.id ? 4 : 2,
-              dashArray: "5, 10",
-            }}
-            eventHandlers={{ click: (e) => onFeatureClick(e, nb, "neighborhood") }}
-          />
-        ))}
+        <NeighborhoodLayer 
+          neighborhoods={neighborhoods} 
+          selectedNeighborhoodId={selectedNeighborhoodId} 
+          onFeatureClick={onFeatureClick} 
+        />
 
-        {blocks.map((block) => (
-          <GeoJSON
-            key={block.id}
-            data={block.geometry || block.geom}
-            pathOptions={{
-              color: selectedId === block.id ? "#e67e22" : block.neighborhood_id ? stringToColor(block.neighborhood_id) : "#3388ff",
-              fillOpacity: 0.1,
-              weight: selectedId === block.id ? 4 : 2,
-            }}
-            eventHandlers={{ click: (e) => onFeatureClick(e, block, "block") }}
-          />
-        ))}
+        <BlocksLayer 
+          blocks={blocks} 
+          houses={houses} 
+          selectedId={selectedId} 
+          onFeatureClick={onFeatureClick} 
+          currentBlock={currentBlock} 
+          mode={mode} 
+          divisionPoints={divisionPoints} 
+          setDivisionPoints={setDivisionPoints} 
+        />
 
-        {houses.map((house) => (
-          <GeoJSON
-            key={house.id}
-            data={house.geometry || house.geom}
-            pathOptions={{
-              color: selectedId === house.id ? "#e67e22" : "#28a745",
-              fillOpacity: 0.4,
-              weight: selectedId === house.id ? 3 : 1,
-            }}
-            eventHandlers={{ click: (e) => onFeatureClick(e, house, "house") }}
-          />
-        ))}
+        <GpsWalkLayer 
+          path={path} 
+          currentPosition={currentPosition} 
+          mode={mode} 
+        />
 
-        {mode === "gps" && path.length > 0 && (
-          <>
-            <Polyline positions={path} color="#007bff" weight={3} />
-            {currentPosition && (
-              <Polyline
-                positions={[path[path.length - 1], [currentPosition.lat, currentPosition.lng]]}
-                color="#007bff"
-                weight={2}
-                dashArray="5, 5"
-              />
-            )}
-          </>
-        )}
-
-        {currentPosition && mode === "gps" && (
-          <>
-            <Circle
-              center={[currentPosition.lat, currentPosition.lng]}
-              radius={currentPosition.accuracy}
-              pathOptions={{ fillColor: "#007bff", fillOpacity: 0.1, color: "#007bff", weight: 1 }}
-            />
-            <Marker
-              position={[currentPosition.lat, currentPosition.lng]}
-              icon={L.divIcon({
-                className: "user-pos-marker",
-                html: `
-                  <div class="user-pos-icon" style="width: 16px; height: 16px;">
-                    ${currentPosition.heading ? `<div class="heading-cone" style="transform: rotate(${currentPosition.heading}deg)"></div>` : ""}
-                  </div>
-                `,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8],
-              })}
-            />
-          </>
-        )}
-
-        {(mode === "subdivision" || mode === "preview") && currentBlock && (
-          <GeoJSON
-            data={currentBlock}
-            pathOptions={{ color: "orange", fillOpacity: 0.2 }}
-            eventHandlers={{
-              add: (e) => {
-                if (mode === "subdivision") e.target.pm.enable();
-              },
-            }}
-          />
-        )}
-
-        {divisionPoints.map((pt, idx) => (
-          <Marker
-            key={idx}
-            position={[pt[1], pt[0]]}
-            draggable={mode === "subdivision"}
-            eventHandlers={{
-              dragend: (e) => {
-                const newPos = e.target.getLatLng();
-                setDivisionPoints((prev) => {
-                  const updated = [...prev];
-                  updated[idx] = [newPos.lng, newPos.lat];
-                  return updated;
-                });
-              },
-            }}
-          />
-        ))}
       </MapContainer>
     </AppLayout>
   );
