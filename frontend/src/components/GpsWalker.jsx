@@ -32,11 +32,13 @@ const GpsWalker = ({
     currentPosition, 
     path, 
     isPaused, 
+    isWatching,
     togglePause, 
     undoLastPoint, 
     reset,
     totalDistance,
-    error 
+    error,
+    startWatch,
   } = walk;
 
   const { stepCount } = sensors;
@@ -85,15 +87,18 @@ const GpsWalker = ({
     setShowCalib(false);
   };
 
-
-  if (!walk.isWatching) return null;
-
   return (
     <div className="gps-walker-panel">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
         <h3 style={{ margin: 0, fontSize: '16px' }}>Captura GPS</h3>
         <span className={`gps-indicator ${error ? 'gps-indicator-error' : (isPaused ? 'gps-indicator-paused' : 'gps-indicator-active')}`} />
       </div>
+
+      {!isWatching && (
+        <div className="accuracy-warning" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#1d4ed8', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+          📡 Esperando activar GPS o permisos. Presiona "Reintentar GPS".
+        </div>
+      )}
 
       <div className="gps-stats">
         <div className="stat-item">
@@ -123,6 +128,16 @@ const GpsWalker = ({
       )}
 
       {error && <div className="accuracy-warning">❌ Error: {error}</div>}
+
+      {!isWatching && (
+        <button
+          className="gps-btn gps-btn-primary"
+          onClick={startWatch}
+          style={{ gridColumn: 'span 2', marginBottom: '8px' }}
+        >
+          🔁 Reintentar GPS
+        </button>
+      )}
 
       {nearStart && (
         <button className="gps-btn gps-btn-success closure-suggestion" onClick={onCloseHere}>

@@ -39,3 +39,19 @@
   border-radius: 4px;
   font-size: 12px;
 }
+
+/* Controlar z-index y separación de controles Leaflet para no pisar overlays */
+.leaflet-control-container .leaflet-top,
+.leaflet-control-container .leaflet-bottom {
+  z-index: 20;
+}
+
+.leaflet-control-container .leaflet-bottom.leaflet-right {
+  margin-bottom: 4rem;
+}
+
+@media (min-width: 640px) {
+  .leaflet-control-container .leaflet-bottom.leaflet-right {
+    margin-bottom: 1.25rem;
+  }
+}

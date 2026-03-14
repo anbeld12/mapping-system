@@ -96,11 +96,11 @@ const SidebarPanel = ({ neighborhoods, onSelect, onCreateMode, onEdit, onEditNam
   return (
     <div className="h-full bg-card text-card-foreground flex flex-col">
       <Tabs defaultValue="neighborhoods" className="w-full flex-1 flex flex-col">
-        <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-12 px-2">
-          <TabsTrigger value="neighborhoods" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none h-12">
+        <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-14 md:h-12 px-2 overflow-x-auto">
+          <TabsTrigger value="neighborhoods" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none h-14 md:h-12 text-sm md:text-base px-4">
             Barrios
           </TabsTrigger>
-          <TabsTrigger value="sync" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none h-12">
+          <TabsTrigger value="sync" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none h-14 md:h-12 text-sm md:text-base px-4">
             Sincronización
           </TabsTrigger>
         </TabsList>

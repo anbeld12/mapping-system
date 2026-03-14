@@ -327,24 +327,12 @@ export default function MapView() {
   const selectedId = selectedElement?.id;
 
   const statusToolbar = (
-    <div className="flex flex-1 items-center justify-between">
-      <div className="flex items-center gap-3">
-        <Badge variant="outline" className="px-3 py-1 bg-muted/30">
-          Modo: <span className="ml-1 font-bold text-primary">{mode.toUpperCase()}</span>
-        </Badge>
-        {mode === "gps" && (
-          <div className="flex items-center gap-2 text-xs font-medium text-blue-600 animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            GRABANDO RECORRIDO
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
+    <div className="flex flex-1 items-center justify-end gap-2 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-2 shrink-0">
         {mode === "view" && (
           <Button
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-3 md:h-9 md:px-4 text-xs md:text-sm"
             onClick={async () => {
               await sensors.requestPermissions();
               setMode("gps");
@@ -352,27 +340,28 @@ export default function MapView() {
               closeSidebar();
             }}
           >
-            🚶 Iniciar Caminata GPS
+            🚶 <span className="hidden xs:inline ml-1">Caminata GPS</span>
+            <span className="xs:hidden ml-1">GPS</span>
           </Button>
         )}
 
         {mode === "preview" && (
-          <>
-            <Button size="sm" onClick={() => setMode("subdivision")} variant="default">
-              👍 Aceptar y Editar
+          <div className="flex items-center gap-1">
+            <Button size="sm" onClick={() => setMode("subdivision")} variant="default" className="h-10 md:h-9 text-xs">
+              👍 <span className="hidden xs:inline ml-1">Aceptar</span>
             </Button>
-            <Button size="sm" onClick={() => setMode("gps")} variant="outline">
-              🔄 Reanudar captura
+            <Button size="sm" onClick={() => setMode("gps")} variant="outline" className="h-10 md:h-9 text-xs">
+              🔄 <span className="hidden xs:inline ml-1">Reanudar</span>
             </Button>
-          </>
+          </div>
         )}
 
         {(mode === "subdivision" || mode === "preview") && (
-          <div className="flex items-center gap-2 border-l pl-4 ml-2">
-            <span className="text-xs text-muted-foreground font-medium">Asignar Barrio:</span>
+          <div className="flex items-center gap-1 border-l pl-2 md:pl-4 md:ml-2">
+            <span className="text-[10px] md:text-xs text-muted-foreground font-medium hidden sm:inline">Barrio:</span>
             <Select value={selectedNeighborhoodId || ""} onValueChange={(v) => setSelectedNeighborhoodId(v || null)}>
-              <SelectTrigger className="w-40 h-9">
-                <SelectValue placeholder="No asignado" />
+              <SelectTrigger className="w-24 md:w-40 h-10 md:h-9 text-xs">
+                <SelectValue placeholder="Barrio" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">No asignado</SelectItem>
@@ -387,9 +376,9 @@ export default function MapView() {
         )}
 
         {mode === "subdivision" && (
-          <>
-            <Button size="sm" onClick={handleSaveBlock} className="bg-green-600 hover:bg-green-700 text-white">
-              💾 Guardar y Subdividir
+          <div className="flex items-center gap-1">
+            <Button size="sm" onClick={handleSaveBlock} className="bg-green-600 hover:bg-green-700 text-white h-10 md:h-9 text-xs">
+              💾 <span className="hidden xs:inline ml-1">Guardar</span>
             </Button>
             <Button
               size="sm"
@@ -399,10 +388,11 @@ export default function MapView() {
                 setDivisionPoints([]);
               }}
               variant="ghost"
+              className="h-10 md:h-9 text-xs px-2"
             >
-              ❌ Cancelar
+              ❌
             </Button>
-          </>
+          </div>
         )}
       </div>
     </div>
@@ -429,92 +419,124 @@ export default function MapView() {
       }
       onExport={() => setShowExportModal(true)}
     >
-      <OfflineIndicator />
+      {/* Contenedor relativo principal para overlays y mapa */}
+      <div className="relative w-full h-full flex-1 overflow-hidden">
+        {/* Rail superior: indicador de modo y offline */}
+        <div className="pointer-events-none absolute top-3 left-0 right-0 z-30 flex flex-col items-center gap-2 px-3">
+          <div className="flex gap-2 items-center justify-center">
+            <div className="pointer-events-auto">
+              <OfflineIndicator />
+            </div>
+            <div className="pointer-events-auto">
+              <Badge variant="outline" className="px-3 py-1 bg-background/80 backdrop-blur-sm border-primary/50 shadow-md whitespace-nowrap">
+                Modo: <span className="ml-1 font-bold text-primary">{mode.toUpperCase()}</span>
+              </Badge>
+            </div>
+          </div>
+          {mode === "gps" && (
+            <div className="pointer-events-auto flex items-center gap-2 px-3 py-1 bg-blue-50/90 backdrop-blur-sm border border-blue-200 rounded-full text-xs font-bold text-blue-600 animate-pulse shadow-sm whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              GRABANDO RECORRIDO
+            </div>
+          )}
+        </div>
 
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        neighborhoods={neighborhoods}
-        currentBbox={bbox}
-      />
+        {/* Rail inferior reservado para overlays flotantes (GpsWalkCard) */}
+        <div className="pointer-events-none absolute inset-0">
+          <GpsWalkCard
+            walk={walk}
+            sensors={{ stepCount }}
+            onFinish={() => handleFinishWalk(false)}
+            onCloseHere={() => handleFinishWalk(true)}
+            manualMode={manualMode}
+            setManualMode={setManualMode}
+            stepLength={stepLength}
+            onCalibrate={calibrateStepLength}
+          />
+        </div>
 
-      <EditContextToolbar
-        selectedId={selectedElement?.id}
-        entityType={selectedElement?.entityType}
-        onSave={handleUpdate}
-        onCancel={() => {
-          if (selectedElement) selectedElement.layer.pm.disable();
-          setSelectedElement(null);
-          setMode("view");
-        }}
-        onDelete={async () => {
-          if (!selectedElement) return;
-          try {
-            const { id, entityType } = selectedElement;
-            if (entityType === "block") {
-              await offlineStorage.deleteBlock(id);
-              await offlineStorage.addPendingChange({ entity_type: "block", entity_id: id, operation: "DELETE" });
-            } else if (entityType === "neighborhood") {
-              await offlineStorage.deleteNeighborhood(id);
-              await offlineStorage.addPendingChange({ entity_type: "neighborhood", entity_id: id, operation: "DELETE" });
-            }
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          neighborhoods={neighborhoods}
+          currentBbox={bbox}
+        />
+
+        <EditContextToolbar
+          selectedId={selectedElement?.id}
+          entityType={selectedElement?.entityType}
+          onSave={handleUpdate}
+          onCancel={() => {
+            if (selectedElement) selectedElement.layer.pm.disable();
             setSelectedElement(null);
             setMode("view");
-            if (bbox) loadData(bbox);
-          } catch (e) {
-            toast({ title: "Error al eliminar", description: e.message, variant: "destructive" });
-          }
-        }}
-      />
-
-      <GpsWalkCard
-        walk={walk}
-        sensors={{ stepCount }}
-        onFinish={() => handleFinishWalk(false)}
-        onCloseHere={() => handleFinishWalk(true)}
-        manualMode={manualMode}
-        setManualMode={setManualMode}
-        stepLength={stepLength}
-        onCalibrate={calibrateStepLength}
-      />
-
-      <MapContainer center={[4.6097, -74.0817]} zoom={17} className="h-full w-full" zoomControl={false}>
-        <ZoomControl position="bottomright" />
-        <LayersControl position="topright">
-          <LayersControl.BaseLayer checked name="Mapa Callejero">
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Mapa Satelital">
-            <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-          </LayersControl.BaseLayer>
-        </LayersControl>
-        
-        <MapEvents />
-
-        <NeighborhoodLayer 
-          neighborhoods={neighborhoods} 
-          selectedNeighborhoodId={selectedNeighborhoodId} 
-          onFeatureClick={onFeatureClick} 
+          }}
+          onDelete={async () => {
+            if (!selectedElement) return;
+            try {
+              const { id, entityType } = selectedElement;
+              if (entityType === "block") {
+                await offlineStorage.deleteBlock(id);
+                await offlineStorage.addPendingChange({ entity_type: "block", entity_id: id, operation: "DELETE" });
+              } else if (entityType === "neighborhood") {
+                await offlineStorage.deleteNeighborhood(id);
+                await offlineStorage.addPendingChange({ entity_type: "neighborhood", entity_id: id, operation: "DELETE" });
+              }
+              setSelectedElement(null);
+              setMode("view");
+              if (bbox) loadData(bbox);
+            } catch (e) {
+              toast({ title: "Error al eliminar", description: e.message, variant: "destructive" });
+            }
+          }}
         />
 
-        <BlocksLayer 
-          blocks={blocks} 
-          houses={houses} 
-          selectedId={selectedId} 
-          onFeatureClick={onFeatureClick} 
-          currentBlock={currentBlock} 
-          mode={mode} 
-          divisionPoints={divisionPoints} 
-          setDivisionPoints={setDivisionPoints} 
-        />
+        {/* Contenedor del mapa */}
+        <div className="w-full h-full relative flex-1">
+          <MapContainer
+            center={[4.6097, -74.0817]}
+            zoom={17}
+            className="w-full h-full z-0"
+            zoomControl={false}
+          >
+            {/* Controles Leaflet con z-index controlado y separación para flotantes */}
+            <ZoomControl position="bottomright" />
+            <LayersControl position="bottomright">
+              <LayersControl.BaseLayer checked name="Mapa Callejero">
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              </LayersControl.BaseLayer>
+              <LayersControl.BaseLayer name="Mapa Satelital">
+                <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+              </LayersControl.BaseLayer>
+            </LayersControl>
 
-        <GpsWalkLayer 
-          path={path} 
-          currentPosition={currentPosition} 
-          mode={mode} 
-        />
+            <MapEvents />
 
-      </MapContainer>
+            <NeighborhoodLayer
+              neighborhoods={neighborhoods}
+              selectedNeighborhoodId={selectedNeighborhoodId}
+              onFeatureClick={onFeatureClick}
+            />
+
+            <BlocksLayer
+              blocks={blocks}
+              houses={houses}
+              selectedId={selectedId}
+              onFeatureClick={onFeatureClick}
+              currentBlock={currentBlock}
+              mode={mode}
+              divisionPoints={divisionPoints}
+              setDivisionPoints={setDivisionPoints}
+            />
+
+            <GpsWalkLayer
+              path={path}
+              currentPosition={currentPosition}
+              mode={mode}
+            />
+          </MapContainer>
+        </div>
+      </div>
     </AppLayout>
   );
 }

@@ -103,3 +103,24 @@ body {
     @apply font-sans;
   }
 }
+
+/**
+ * Mobile-First Leaflet Overrides
+ */
+.leaflet-bottom.leaflet-right {
+  margin-bottom: 20rem !important; /* Higher margin to clear GpsWalkCard in mobile */
+}
+
+@media (min-width: 768px) {
+  .leaflet-bottom.leaflet-right {
+    margin-bottom: 1rem !important;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -92,33 +92,33 @@ const NeighborhoodManager = ({
                     </Badge>
                   </div>
                   
-                  <div className="mt-3 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className={`mt-3 flex items-center justify-end gap-1 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}>
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-8 w-8 hover:bg-background shadow-none"
+                      className="h-10 w-10 md:h-8 md:w-8 hover:bg-background shadow-none"
                       onClick={(e) => { e.stopPropagation(); onSelect(nb); }}
                       title="Centrar en mapa"
                     >
-                      <Target className="h-4 w-4 text-primary" />
+                      <Target className="h-5 w-5 md:h-4 md:w-4 text-primary" />
                     </Button>
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-8 w-8 hover:bg-background shadow-none"
+                      className="h-10 w-10 md:h-8 md:w-8 hover:bg-background shadow-none"
                       onClick={(e) => { e.stopPropagation(); handleOpenRename(nb); }}
                       title="Editar nombre"
                     >
-                      <Type className="h-4 w-4" />
+                      <Type className="h-5 w-5 md:h-4 md:w-4" />
                     </Button>
                     <Button 
                       size="icon" 
                       variant="ghost" 
-                      className="h-8 w-8 hover:bg-background shadow-none text-blue-600 hover:text-blue-700" 
+                      className="h-10 w-10 md:h-8 md:w-8 hover:bg-background shadow-none text-blue-600 hover:text-blue-700" 
                       onClick={(e) => { e.stopPropagation(); onEdit(nb); }}
                       title="Editar límites"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-5 w-5 md:h-4 md:w-4" />
                     </Button>
                   </div>
 
