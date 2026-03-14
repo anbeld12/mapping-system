@@ -95,7 +95,7 @@ const GpsWalker = ({
       </div>
 
       {!isWatching && (
-        <div className="accuracy-warning" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#1d4ed8', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+        <div className="accuracy-warning">
           📡 Esperando activar GPS o permisos. Presiona "Reintentar GPS".
         </div>
       )}
@@ -116,7 +116,7 @@ const GpsWalker = ({
       </div>
 
       {isDrActive && (
-        <div className="accuracy-warning" style={{ background: 'rgba(255, 165, 2, 0.1)', color: '#ffa502', borderColor: 'rgba(255, 165, 2, 0.2)' }}>
+        <div className="accuracy-warning">
           🔄 Modo: Estimación por Pasos (GPS Débil)
         </div>
       )}
@@ -127,7 +127,7 @@ const GpsWalker = ({
         </div>
       )}
 
-      {error && <div className="accuracy-warning">❌ Error: {error}</div>}
+      {error && <div className="accuracy-warning error">❌ Error: {error}</div>}
 
       {!isWatching && (
         <button
@@ -149,7 +149,7 @@ const GpsWalker = ({
         {!showCalib ? (
             <button className="gps-btn gps-btn-secondary" onClick={startCalibration} style={{ gridColumn: 'span 2' }}>
                 📏 Calibrar Paso (Caminar 10m)
-            </button>
+            </button>Finalizar
         ) : (
             <button className="gps-btn gps-btn-success pulse" onClick={finishCalibration} style={{ gridColumn: 'span 2' }}>
                 🏁 Finalizar 10m ({stepCount - calibSteps} pasos)

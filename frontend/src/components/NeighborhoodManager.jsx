@@ -73,8 +73,8 @@ const NeighborhoodManager = ({
                 <div
                   key={nb.id}
                   onClick={() => onSelect(nb)}
-                  className={`group relative flex flex-col rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md ${
-                    isSelected ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-border bg-card hover:border-primary/50'
+                  className={`group relative flex flex-col rounded-xl border p-3 transition-all cursor-pointer hover:shadow-md hover:bg-blue-50/70 ${
+                    isSelected ? 'border-primary ring-1 ring-primary bg-primary/5' : 'border-blue-100 bg-white'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">

@@ -132,7 +132,16 @@ const ExportModal = ({ isOpen, onClose, neighborhoods, currentBbox }) => {
             onChange={(e) => setFilters({...filters, neighborhood_ids: Array.from(e.target.selectedOptions, option => option.value)})}
             style={{width: '100%', padding: '5px', height: '80px', borderRadius: '4px', border: '1px solid #ddd'}}
           >
-            {neighborhoods.map(nb => <option key={nb.id} value={nb.id}>{nb.name}</option>)}
+            {neighborhoods
+              .filter(nb => nb && (nb.id || nb.value))
+              .map((nb, idx) => {
+                const safeValue = String(nb.id || nb.value || `exp-${idx}`);
+                return (
+                  <option key={safeValue} value={safeValue}>
+                    {nb.name || "Sin nombre"}
+                  </option>
+                );
+              })}
           </select>
           <small style={{color: '#666'}}>Mantén Ctrl para seleccionar varios.</small>
         </div>

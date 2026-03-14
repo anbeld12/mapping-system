@@ -9,7 +9,7 @@ const AppLayout = ({ children, sidebar, onExport, statusToolbar }) => {
   return (
     <div className="flex flex-col h-[100dvh] w-full overflow-hidden bg-background text-foreground antialiased">
       {/* Navbar fijo */}
-      <header className="relative h-16 shrink-0 bg-background border-b border-border flex items-center px-4 z-50">
+      <header className="relative h-16 shrink-0 bg-background/95 backdrop-blur-md border-b border-blue-100 shadow-sm flex items-center px-4 z-50 text-foreground">
         <div className="flex items-center gap-3 min-w-0">
           <Sheet>
             <SheetTrigger asChild>
@@ -27,17 +27,17 @@ const AppLayout = ({ children, sidebar, onExport, statusToolbar }) => {
             </SheetContent>
           </Sheet>
           
-          <h1 className="text-xl font-semibold truncate hidden md:block">
-            Sistema de Mapeo Geoespacial - Acueducto de Bogotá
+          <h1 className="text-xl font-semibold truncate hidden md:block text-slate-900">
+            Sistema de Mapeo Geoespacial - <span className="text-primary font-semibold">Acueducto de Bogotá</span>
           </h1>
-          <h1 className="text-xl font-semibold truncate md:hidden">
+          <h1 className="text-xl font-semibold truncate md:hidden text-slate-900">
             Mapeo Acueducto
           </h1>
         </div>
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {onExport && (
-            <Button variant="secondary" size="sm" onClick={onExport} className="h-9">
+            <Button variant="secondary" size="sm" onClick={onExport} className="h-9 bg-secondary text-foreground hover:bg-secondary/80 border border-blue-100 shadow-xs">
               <span className="hidden sm:inline">Exportar / Reportes</span>
               <span className="sm:hidden">📤</span>
             </Button>
@@ -48,7 +48,7 @@ const AppLayout = ({ children, sidebar, onExport, statusToolbar }) => {
       {/* Main shell: genera stacking context y contenedor relativo */}
       <main className="relative flex flex-1 overflow-hidden">
         {/* Sidebar (Desktop) */}
-        <aside className="hidden md:flex flex-col w-80 h-full border-r bg-background shrink-0 z-10">
+        <aside className="hidden md:flex flex-col w-80 h-full border-r border-blue-100 bg-white shrink-0 z-10">
           <div className="flex-1 overflow-y-auto">
             {sidebar}
           </div>

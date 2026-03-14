@@ -94,18 +94,24 @@ const SidebarPanel = ({ neighborhoods, onSelect, onCreateMode, onEdit, onEditNam
   const { selectedNeighborhoodId, setSelectedNeighborhoodId, closeSidebar } = useUIState();
 
   return (
-    <div className="h-full bg-card text-card-foreground flex flex-col">
+    <div className="h-full bg-white text-foreground flex flex-col border-r border-blue-100">
       <Tabs defaultValue="neighborhoods" className="w-full flex-1 flex flex-col">
-        <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-14 md:h-12 px-2 overflow-x-auto">
-          <TabsTrigger value="neighborhoods" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none h-14 md:h-12 text-sm md:text-base px-4">
+        <TabsList className="w-full justify-start rounded-none border-b border-blue-100 bg-blue-50/60 h-14 md:h-12 px-2 overflow-x-auto backdrop-blur-sm">
+          <TabsTrigger
+            value="neighborhoods"
+            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none h-14 md:h-12 text-sm md:text-base px-4 hover:bg-blue-50/80 transition-colors"
+          >
             Barrios
           </TabsTrigger>
-          <TabsTrigger value="sync" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none h-14 md:h-12 text-sm md:text-base px-4">
+          <TabsTrigger
+            value="sync"
+            className="data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none h-14 md:h-12 text-sm md:text-base px-4 hover:bg-blue-50/80 transition-colors"
+          >
             Sincronización
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="neighborhoods" className="flex-1 overflow-y-auto m-0 p-0">
+        <TabsContent value="neighborhoods" className="flex-1 overflow-y-auto m-0 p-0 bg-white">
           <div className="p-4">
             <NeighborhoodManager
               neighborhoods={neighborhoods}
@@ -122,7 +128,7 @@ const SidebarPanel = ({ neighborhoods, onSelect, onCreateMode, onEdit, onEditNam
           </div>
         </TabsContent>
 
-        <TabsContent value="sync" className="flex-1 overflow-y-auto m-0">
+        <TabsContent value="sync" className="flex-1 overflow-y-auto m-0 bg-white">
           <SyncStatus />
         </TabsContent>
       </Tabs>

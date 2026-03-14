@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, ZoomControl, LayersControl, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, ZoomControl, LayersControl, useMapEvents, useMap } from "react-leaflet";
 import { useState, useEffect, useCallback, useRef } from "react";
 import L from "leaflet";
 import * as turf from "@turf/turf";
@@ -66,7 +66,7 @@ export default function MapView() {
   const mapRef = useRef(null);
 
   const walk = useGpsWalk();
-  const { path, currentPosition, startWatch, stopWatch, addManualPoint, addDrPoint } = walk;
+  const { path, currentPosition, startWatch, stopWatch, addManualPoint, addDrPoint, isWatching } = walk;
 
   // Sensors
   const sensors = useSensors();
@@ -359,17 +359,24 @@ export default function MapView() {
         {(mode === "subdivision" || mode === "preview") && (
           <div className="flex items-center gap-1 border-l pl-2 md:pl-4 md:ml-2">
             <span className="text-[10px] md:text-xs text-muted-foreground font-medium hidden sm:inline">Barrio:</span>
-            <Select value={selectedNeighborhoodId || ""} onValueChange={(v) => setSelectedNeighborhoodId(v || null)}>
+            <Select 
+              value={selectedNeighborhoodId || undefined} 
+              onValueChange={(v) => setSelectedNeighborhoodId(v || null)}
+            >
               <SelectTrigger className="w-24 md:w-40 h-10 md:h-9 text-xs">
                 <SelectValue placeholder="Barrio" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No asignado</SelectItem>
-                {neighborhoods.map((n) => (
-                  <SelectItem key={n.id} value={n.id}>
-                    {n.name || "Sin nombre"}
-                  </SelectItem>
-                ))}
+                {neighborhoods
+                  .filter(n => n && (n.id || n.value))
+                  .map((n, idx) => {
+                    const safeValue = String(n.id || n.value || `nb-${idx}`);
+                    return (
+                      <SelectItem key={safeValue} value={safeValue}>
+                        {n.name || "Sin nombre"}
+                      </SelectItem>
+                    );
+                  })}
               </SelectContent>
             </Select>
           </div>
@@ -397,6 +404,25 @@ export default function MapView() {
       </div>
     </div>
   );
+
+  const MapController = ({ center, isWatching }) => {
+    const map = useMap();
+    const hasCenteredRef = useRef(false);
+
+    useEffect(() => {
+      if (isWatching && center && !hasCenteredRef.current) {
+        map.setView([center.lat, center.lng], 18, {
+          animate: true,
+          pan: {
+            duration: 0.3
+          }
+        });
+        hasCenteredRef.current = true;
+      }
+    }, [isWatching]);
+
+    return null;
+  };
 
   return (
     <AppLayout
@@ -501,6 +527,7 @@ export default function MapView() {
           >
             {/* Controles Leaflet con z-index controlado y separación para flotantes */}
             <ZoomControl position="bottomright" />
+            <MapController center={currentPosition} isWatching={isWatching} />
             <LayersControl position="bottomright">
               <LayersControl.BaseLayer checked name="Mapa Callejero">
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />

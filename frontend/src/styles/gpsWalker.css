@@ -2,18 +2,18 @@
   /* Layout handled by Card wrapper (Tailwind). Make the panel fluid inside. */
   position: static;
   width: 100%;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+  box-shadow: 0 10px 40px 0 rgba(59, 130, 246, 0.18);
   display: flex;
   flex-direction: column;
   gap: 12px;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  color: #2d3436;
+  color: #0f172a;
 }
 
 .gps-stats {
@@ -24,7 +24,7 @@
 }
 
 .stat-item {
-  background: rgba(0, 123, 255, 0.1);
+  background: rgba(59, 130, 246, 0.08);
   padding: 8px;
   border-radius: 8px;
   display: flex;
@@ -35,14 +35,14 @@
 .stat-value {
   font-weight: 700;
   font-size: 16px;
-  color: #007bff;
+  color: #1d4ed8;
 }
 
 .stat-label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #636e72;
+  color: #475569;
 }
 
 .gps-controls {
@@ -70,29 +70,50 @@
 }
 
 .gps-btn-primary {
-  background: #007bff;
+  background: #2563eb;
   color: white;
   grid-column: span 2;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+}
+
+.gps-btn-primary:hover {
+  background: #1d4ed8;
 }
 
 .gps-btn-secondary {
-  background: #f1f2f6;
-  color: #2f3542;
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.gps-btn-secondary:hover {
+  background: #dbeafe;
 }
 
 .gps-btn-danger {
-  background: #ff4757;
+  background: #f87171;
   color: white;
+}
+
+.gps-btn-danger:hover {
+  background: #ef4444;
 }
 
 .gps-btn-warning {
-  background: #ffa502;
-  color: white;
+  background: #fbbf24;
+  color: #0f172a;
+}
+
+.gps-btn-warning:hover {
+  background: #f59e0b;
 }
 
 .gps-btn-success {
-  background: #2ed573;
+  background: #22c55e;
   color: white;
+}
+
+.gps-btn-success:hover {
+  background: #16a34a;
 }
 
 .gps-btn:disabled {
@@ -101,14 +122,20 @@
 }
 
 .accuracy-warning {
-  background: rgba(255, 71, 87, 0.1);
-  color: #ff4757;
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
   padding: 8px;
   border-radius: 8px;
   font-size: 12px;
   text-align: center;
   font-weight: 500;
-  border: 1px solid rgba(255, 71, 87, 0.2);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.accuracy-warning.error {
+  background: rgba(248, 113, 113, 0.12);
+  color: #b91c1c;
+  border-color: rgba(248, 113, 113, 0.3);
 }
 
 .closure-suggestion {
