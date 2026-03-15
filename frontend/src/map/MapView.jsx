@@ -161,25 +161,53 @@ export default function MapView() {
   }
 
   const handleFinishWalk = (closeAutomatically = false) => {
-    if (path.length < 3) {
-      toast({ title: "Captura incompleta", description: "Se necesitan al menos 3 puntos." });
+    const { segments, anchors } = walk;
+    
+    // Consolidar todos los puntos de los segmentos
+    let allPoints = [];
+    
+    if (segments.length > 0) {
+      segments.forEach((seg, i) => {
+        // Evitrar duplicar el punto final de un segmento con el inicial del siguiente
+        const points = i === 0 ? seg.points : seg.points.slice(1);
+        allPoints.push(...points);
+      });
+    }
+
+    // Si hay anclajes sin segmento cerrado aún (último punto)
+    if (anchors.length > 0) {
+      const lastAnchor = anchors[anchors.length - 1];
+      const lastPointInAll = allPoints.length > 0 ? allPoints[allPoints.length - 1] : null;
+      if (!lastPointInAll || (lastPointInAll[0] !== lastAnchor[0] || lastPointInAll[1] !== lastAnchor[1])) {
+        allPoints.push(lastAnchor);
+      }
+    }
+
+    if (allPoints.length < 3) {
+      toast({ title: "Captura incompleta", description: "Se necesitan al menos 3 anclajes o puntos de curva." });
       return;
     }
-    let coords = path.map((p) => [p[1], p[0]]);
-    if (closeAutomatically) {
-      coords.push(coords[0]);
-    } else if (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1]) {
+
+    // Leaflet [lat, lng] -> GeoJSON [lng, lat]
+    let coords = allPoints.map((p) => [p[1], p[0]]);
+    
+    // Cerrar el polígono
+    if (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1]) {
       coords.push(coords[0]);
     }
 
-    const line = turf.lineString(coords);
-    const simplified = turf.simplify(line, { tolerance: 0.00001, highQuality: true });
-    const polygon = turf.polygon([simplified.geometry.coordinates]);
+    try {
+      const line = turf.lineString(coords);
+      const simplified = turf.simplify(line, { tolerance: 0.00001, highQuality: true });
+      const polygon = turf.polygon([simplified.geometry.coordinates]);
 
-    setCurrentBlock(polygon.geometry);
-    setMode("preview");
-    stopWatch();
-    setManualMode(false);
+      setCurrentBlock(polygon.geometry);
+      setMode("preview");
+      stopWatch();
+      setManualMode(false);
+    } catch (err) {
+      toast({ title: "Error en Geometría", description: "No se pudo generar el polígono.", variant: "destructive" });
+    }
   };
 
   const handleSaveBlock = async () => {
@@ -562,8 +590,7 @@ export default function MapView() {
             />
 
             <GpsWalkLayer
-              path={path}
-              currentPosition={currentPosition}
+              walk={walk}
               mode={mode}
             />
           </MapContainer>

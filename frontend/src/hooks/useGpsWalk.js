@@ -3,7 +3,10 @@ import * as turf from '@turf/turf';
 
 export const useGpsWalk = () => {
   const [currentPosition, setCurrentPosition] = useState(null); // { lat, lng, accuracy, heading }
-  const [path, setPath] = useState([]); // Array of [lat, lng]
+  const [path, setPath] = useState([]); // Array of [lat, lng] (temporal para segmento actual)
+  const [anchors, setAnchors] = useState([]); // Array of [lat, lng] (puntos confirmados)
+  const [segments, setSegments] = useState([]); // Array of { type: 'RECTA' | 'CURVA', points: [[lat, lng], ...] }
+  const [walkMode, setWalkMode] = useState('RECTA'); // 'RECTA' or 'CURVA'
   const [isWatching, setIsWatching] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [error, setError] = useState(null);
@@ -22,6 +25,41 @@ export const useGpsWalk = () => {
     return turf.distance(from, to, { units: 'meters' });
   };
 
+  const lastFilteredPosRef = useRef(null);
+
+  const filterSignal = useCallback((newPos) => {
+    if (!lastFilteredPosRef.current) {
+      lastFilteredPosRef.current = newPos;
+      return newPos;
+    }
+
+    const last = lastFilteredPosRef.current;
+    
+    // 1. Inercia / Glitch Protection
+    const dist = calculateDistance([last.lat, last.lng], [newPos.lat, newPos.lng]);
+    
+    if (dist > 100 && newPos.accuracy > 10) {
+        return last;
+    }
+
+    // 2. Confianza por Precisión (Weighted EMA)
+    let weight = 0.3;
+    
+    if (newPos.accuracy > 25) {
+        weight = 0.1;
+    } else if (newPos.accuracy > 50) {
+        weight = 0.05;
+    }
+
+    const filteredLat = last.lat * (1 - weight) + newPos.lat * weight;
+    const filteredLng = last.lng * (1 - weight) + newPos.lng * weight;
+
+    const filtered = { ...newPos, lat: filteredLat, lng: filteredLng };
+    lastFilteredPosRef.current = filtered;
+    return filtered;
+  }, []);
+
+
   const startWatch = useCallback(() => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser");
@@ -34,31 +72,34 @@ export const useGpsWalk = () => {
     setPath([]);
     setTotalDistance(0);
     lastPointRef.current = null;
+    lastFilteredPosRef.current = null;
 
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, accuracy, heading } = pos.coords;
-        const newPos = { lat: latitude, lng: longitude, accuracy, heading };
-        setCurrentPosition(newPos);
+        const rawPos = { lat: latitude, lng: longitude, accuracy, heading };
+        
+        // Aplicar filtrado antes de procesar
+        const filteredPos = filterSignal(rawPos);
+        
+        setCurrentPosition(filteredPos);
         setError(null);
 
-        // Usar la ref en lugar del estado para evitar el closure obsoleto
         if (isPausedRef.current) return;
 
         // Filtering: don't add points if distance from last point < 2m
         if (lastPointRef.current) {
-          const dist = calculateDistance([lastPointRef.current.lat, lastPointRef.current.lng], [latitude, longitude]);
+          const dist = calculateDistance([lastPointRef.current.lat, lastPointRef.current.lng], [filteredPos.lat, filteredPos.lng]);
           if (dist < 2) return;
           setTotalDistance(prev => prev + dist);
         }
 
-        const point = [latitude, longitude];
+        const point = [filteredPos.lat, filteredPos.lng];
         setPath((prev) => [...prev, point]);
-        lastPointRef.current = newPos;
+        lastPointRef.current = filteredPos;
       },
       (err) => {
         setError(err.message);
-        // Auto-pause on signal loss or error
         setIsPaused(true);
         isPausedRef.current = true;
       },
@@ -68,8 +109,7 @@ export const useGpsWalk = () => {
         maximumAge: 0,
       }
     );
-  // startWatch ya no depende de isPaused gracias a la ref
-  }, []);
+  }, [filterSignal]);
 
   const stopWatch = useCallback(() => {
     if (watchId.current !== null) {
@@ -89,27 +129,65 @@ export const useGpsWalk = () => {
     });
   }, []);
 
+  const handleAnchorPoint = useCallback(() => {
+    if (!currentPosition) return;
+
+    // Feedback Háptico
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
+    const newAnchor = [currentPosition.lat, currentPosition.lng];
+    
+    setAnchors(prev => [...prev, newAnchor]);
+
+    if (anchors.length > 0) {
+      const lastAnchor = anchors[anchors.length - 1];
+      let segmentPoints = [];
+
+      if (walkMode === 'CURVA') {
+        // En modo CURVA, usamos el rastro real (path) acumulado
+        // Aseguramos que empiece en el último anclaje y termine en el nuevo
+        segmentPoints = [lastAnchor, ...path, newAnchor];
+      } else {
+        // En modo RECTA, ignoramos intermedios y tiramos línea pura
+        segmentPoints = [lastAnchor, newAnchor];
+      }
+
+      setSegments(prev => [...prev, { type: walkMode, points: segmentPoints }]);
+    }
+
+    // Limpiar path temporal para el siguiente segmento
+    setPath([]);
+    lastPointRef.current = currentPosition;
+  }, [currentPosition, path, anchors, walkMode]);
+
   const undoLastPoint = useCallback(() => {
-    setPath(prev => {
-      if (prev.length <= 1) {
-        setTotalDistance(0);
-        lastPointRef.current = null;
-        return [];
-      }
-      const newPath = prev.slice(0, -1);
-      const lastPoint = newPath[newPath.length - 1];
-      lastPointRef.current = { lat: lastPoint[0], lng: lastPoint[1] };
-      
-      // Recalculate total distance (simplification for undo)
-      let d = 0;
-      for (let i = 0; i < newPath.length - 1; i++) {
-        d += calculateDistance(newPath[i], newPath[i+1]);
-      }
-      setTotalDistance(d);
-      
-      return newPath;
-    });
-  }, []);
+    // Si hay path temporal, deshacer el último punto del path
+    if (path.length > 0) {
+      setPath(prev => {
+        const newPath = prev.slice(0, -1);
+        const lastP = newPath.length > 0 ? newPath[newPath.length - 1] : (anchors.length > 0 ? anchors[anchors.length - 1] : null);
+        if (lastP) {
+          lastPointRef.current = { lat: lastP[0], lng: lastP[1] };
+        }
+        return newPath;
+      });
+    } else if (segments.length > 0) {
+      // Si no hay path, deshacer el último segmento y el último anclaje
+      setSegments(prev => prev.slice(0, -1));
+      setAnchors(prev => {
+        const newAnchors = prev.slice(0, -1);
+        const lastA = newAnchors.length > 0 ? newAnchors[newAnchors.length - 1] : null;
+        if (lastA) {
+          lastPointRef.current = { lat: lastA[0], lng: lastA[1] };
+        } else {
+          lastPointRef.current = null;
+        }
+        return newAnchors;
+      });
+    }
+  }, [path, segments, anchors]);
 
   const addManualPoint = useCallback((lat, lng) => {
     const point = [lat, lng];
@@ -135,6 +213,8 @@ export const useGpsWalk = () => {
 
   const reset = useCallback(() => {
     setPath([]);
+    setAnchors([]);
+    setSegments([]);
     setTotalDistance(0);
     setIsPaused(false);
     isPausedRef.current = false;
@@ -150,6 +230,10 @@ export const useGpsWalk = () => {
   return {
     currentPosition,
     path,
+    anchors,
+    segments,
+    walkMode,
+    setWalkMode,
     isWatching,
     isPaused,
     error,
@@ -158,6 +242,7 @@ export const useGpsWalk = () => {
     stopWatch,
     togglePause,
     undoLastPoint,
+    handleAnchorPoint,
     addManualPoint,
     addDrPoint,
     reset
