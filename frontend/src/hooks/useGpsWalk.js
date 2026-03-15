@@ -163,18 +163,26 @@ export const useGpsWalk = () => {
   }, [currentPosition, path, anchors, walkMode]);
 
   const undoLastPoint = useCallback(() => {
-    // Si hay path temporal, deshacer el último punto del path
+    // Feedback Háptico distintivo para Deshacer
+    if (navigator.vibrate) {
+      navigator.vibrate([30, 30, 30]);
+    }
+
+    // 1. Si hay rastro temporal (path), lo limpiamos primero
     if (path.length > 0) {
-      setPath(prev => {
-        const newPath = prev.slice(0, -1);
-        const lastP = newPath.length > 0 ? newPath[newPath.length - 1] : (anchors.length > 0 ? anchors[anchors.length - 1] : null);
-        if (lastP) {
-          lastPointRef.current = { lat: lastP[0], lng: lastP[1] };
-        }
-        return newPath;
-      });
-    } else if (segments.length > 0) {
-      // Si no hay path, deshacer el último segmento y el último anclaje
+      setPath([]);
+      // Reposicionar al último anclaje si existe
+      if (anchors.length > 0) {
+        const lastA = anchors[anchors.length - 1];
+        lastPointRef.current = { lat: lastA[0], lng: lastA[1] };
+      } else {
+        lastPointRef.current = null;
+      }
+      return;
+    }
+
+    // 2. Si no hay path, deshacer el último segmento y el último anclaje
+    if (anchors.length > 0) {
       setSegments(prev => prev.slice(0, -1));
       setAnchors(prev => {
         const newAnchors = prev.slice(0, -1);
@@ -187,7 +195,7 @@ export const useGpsWalk = () => {
         return newAnchors;
       });
     }
-  }, [path, segments, anchors]);
+  }, [path, anchors]);
 
   const addManualPoint = useCallback((lat, lng) => {
     const point = [lat, lng];

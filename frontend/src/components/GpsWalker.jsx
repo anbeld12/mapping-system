@@ -195,8 +195,13 @@ const GpsWalker = ({
               {isPaused ? 'REANUDAR' : 'PAUSAR'}
             </Button>
 
-            <Button variant="outline" className="h-12 rounded-xl font-bold flex gap-2 text-slate-600 border-slate-200 bg-slate-50" onClick={undoLastPoint}>
-              <Undo className="w-4 h-4" /> DESHACER
+            <Button 
+                variant="outline" 
+                className="h-12 rounded-xl font-bold flex gap-2 text-slate-600 border-slate-200 bg-slate-50" 
+                onClick={undoLastPoint}
+                disabled={anchors.length === 0 && path.length === 0}
+            >
+              <Undo className="w-4 h-4" /> ↩️ DESHACER TRAMO
             </Button>
 
             <Button 
