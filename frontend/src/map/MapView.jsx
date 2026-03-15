@@ -405,13 +405,16 @@ export default function MapView() {
     </div>
   );
 
-  const MapController = ({ center, isWatching }) => {
+  const [isGpsExpanded, setIsGpsExpanded] = useState(false);
+
+  const MapController = ({ center, isWatching, isExpanded }) => {
     const map = useMap();
     const hasCenteredRef = useRef(false);
 
     useEffect(() => {
       if (isWatching && center && !hasCenteredRef.current) {
-        map.setView([center.lat, center.lng], 18, {
+        const targetLat = isExpanded ? center.lat - 0.0005 : center.lat;
+        map.setView([targetLat, center.lng], 18, {
           animate: true,
           pan: {
             duration: 0.3
@@ -419,7 +422,7 @@ export default function MapView() {
         });
         hasCenteredRef.current = true;
       }
-    }, [isWatching]);
+    }, [isWatching, isExpanded, center]);
 
     return null;
   };
@@ -478,6 +481,8 @@ export default function MapView() {
             setManualMode={setManualMode}
             stepLength={stepLength}
             onCalibrate={calibrateStepLength}
+            isExpanded={isGpsExpanded}
+            setIsExpanded={setIsGpsExpanded}
           />
         </div>
 
@@ -527,7 +532,7 @@ export default function MapView() {
           >
             {/* Controles Leaflet con z-index controlado y separación para flotantes */}
             <ZoomControl position="bottomright" />
-            <MapController center={currentPosition} isWatching={isWatching} />
+            <MapController center={currentPosition} isWatching={isWatching} isExpanded={isGpsExpanded} />
             <LayersControl position="bottomright">
               <LayersControl.BaseLayer checked name="Mapa Callejero">
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
