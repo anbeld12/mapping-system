@@ -15,7 +15,11 @@ import {
   Maximize2,
   Minimize2,
   Spline,
-  LineChart
+  LineChart,
+  Home,
+  Layout,
+  RectangleHorizontal,
+  ArrowRightLeft
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -48,7 +52,13 @@ const GpsWalker = ({
     setWalkMode,
     handleAnchorPoint,
     anchors,
-    segments
+    segments,
+    isMappingHouse,
+    currentHouse,
+    housesInWalk,
+    startMappingHouse,
+    finishMappingHouse,
+    toggleHouseType
   } = walk;
 
   const { stepCount } = sensors;
@@ -166,6 +176,51 @@ const GpsWalker = ({
           <MapPin className="w-6 h-6" /> ANCLAR PUNTO / ESQUINA
         </Button>
 
+        {/* Property Mapping Section */}
+        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Mapeo de Predios</label>
+            {isMappingHouse && (
+              <Badge className="bg-emerald-500 animate-pulse">GRABANDO</Badge>
+            )}
+          </div>
+          
+          {!isMappingHouse ? (
+            <Button 
+              className="w-full h-14 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-100 flex gap-3"
+              onClick={() => startMappingHouse('FRONTAL', '')}
+              disabled={isPaused}
+            >
+              <Home className="w-5 h-5" /> 🏠 INICIAR PREDIO
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  variant="outline"
+                  className={`h-12 rounded-xl font-bold flex gap-2 ${currentHouse?.type === 'FRONTAL' ? 'bg-white border-blue-500 text-blue-600' : 'bg-slate-100 text-slate-500'}`}
+                  onClick={toggleHouseType}
+                >
+                  <RectangleHorizontal className="w-4 h-4" /> FACHADA
+                </Button>
+                <Button 
+                  variant="outline"
+                  className={`h-12 rounded-xl font-bold flex gap-2 ${currentHouse?.type === 'ANCHO' ? 'bg-white border-orange-500 text-orange-600' : 'bg-slate-100 text-slate-500'}`}
+                  onClick={toggleHouseType}
+                >
+                  <ArrowRightLeft className="w-4 h-4" /> LATERAL
+                </Button>
+              </div>
+              <Button 
+                className="w-full h-14 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold shadow-lg shadow-orange-100 flex gap-3"
+                onClick={finishMappingHouse}
+              >
+                <Home className="w-5 h-5" /> FINALIZAR PREDIO
+              </Button>
+            </div>
+          )}
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -221,7 +276,7 @@ const GpsWalker = ({
         <Button 
           className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black flex gap-3 shadow-lg shadow-emerald-100" 
           onClick={onFinish} 
-          disabled={anchors.length < 2 && path.length < 3}
+          disabled={(anchors.length < 2 && path.length < 3) || isMappingHouse}
         >
           <CheckCircle2 className="w-5 h-5" /> FINALIZAR Y CERRAR
         </Button>

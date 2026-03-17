@@ -161,7 +161,7 @@ export default function MapView() {
   }
 
   const handleFinishWalk = (closeAutomatically = false) => {
-    const { segments, anchors } = walk;
+    const { segments, anchors, housesInWalk } = walk;
     
     // Consolidar todos los puntos de los segmentos
     let allPoints = [];
@@ -201,7 +201,10 @@ export default function MapView() {
       const simplified = turf.simplify(line, { tolerance: 0.00001, highQuality: true });
       const polygon = turf.polygon([simplified.geometry.coordinates]);
 
-      setCurrentBlock(polygon.geometry);
+      setCurrentBlock({
+        geometry: polygon.geometry,
+        predios: housesInWalk
+      });
       setMode("preview");
       stopWatch();
       setManualMode(false);
@@ -216,8 +219,9 @@ export default function MapView() {
     const blockData = {
       id: localId,
       name: `Cuadra ${new Date().toLocaleTimeString()}`,
-      geometry: currentBlock,
+      geometry: currentBlock.geometry,
       division_points: divisionPoints,
+      predios: currentBlock.predios,
       capture_method: "gps",
       neighborhood_id: selectedNeighborhoodId,
       synced: 0,
@@ -232,6 +236,7 @@ export default function MapView() {
           name: blockData.name,
           geom: blockData.geometry,
           division_points: blockData.division_points,
+          predios: blockData.predios,
           capture_method: blockData.capture_method,
           neighborhood_id: blockData.neighborhood_id,
         },

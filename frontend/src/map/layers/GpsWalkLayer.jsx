@@ -2,7 +2,7 @@ import { Polyline, Circle, Marker } from "react-leaflet";
 import L from "leaflet";
 
 const GpsWalkLayer = ({ walk, mode }) => {
-  const { path, currentPosition, anchors, segments, walkMode } = walk;
+  const { path, currentPosition, anchors, segments, walkMode, isMappingHouse, currentHouse, housesInWalk } = walk;
   if (mode !== "gps") return null;
 
   return (
@@ -33,14 +33,28 @@ const GpsWalkLayer = ({ walk, mode }) => {
         />
       )}
 
-      {/* Si es el primer punto y no hay anclajes aún, mostrar rastro temporal */}
-      {anchors.length === 0 && path.length > 0 && currentPosition && (
-        <Polyline 
-            positions={[...path, [currentPosition.lat, currentPosition.lng]]} 
-            color="#0066FF" 
-            weight={3} 
-            dashArray="10, 10"
-            opacity={0.6}
+      {/* 3. Predios Capturados en la sesión actual */}
+      {housesInWalk.map((house, idx) => (
+        <Polyline
+            key={`session-house-${idx}`}
+            positions={house.geom.coordinates.map(c => [c[1], c[0]])}
+            color={house.tipo === 'FRONTAL' ? '#2ecc71' : '#e67e22'}
+            weight={6}
+            opacity={0.9}
+        />
+      ))}
+
+      {/* 4. Predio en proceso (Elástico) */}
+      {isMappingHouse && currentHouse && currentPosition && (
+        <Polyline
+            positions={[
+                ...(path.slice(currentHouse.startPathIdx)),
+                [currentPosition.lat, currentPosition.lng]
+            ]}
+            color={currentHouse.type === 'FRONTAL' ? '#2ecc71' : '#e67e22'}
+            weight={5}
+            dashArray="5, 10"
+            opacity={0.8}
         />
       )}
 

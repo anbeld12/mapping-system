@@ -40,15 +40,27 @@ const BlocksLayer = ({
       ))}
 
       {(mode === "subdivision" || mode === "preview") && currentBlock && (
-        <GeoJSON
-          data={currentBlock}
-          pathOptions={{ color: "orange", fillOpacity: 0.2 }}
-          eventHandlers={{
-            add: (e) => {
-              if (mode === "subdivision") e.target.pm.enable();
-            },
-          }}
-        />
+        <>
+          <GeoJSON
+            data={currentBlock.geometry || currentBlock}
+            pathOptions={{ color: "orange", fillOpacity: 0.2 }}
+            eventHandlers={{
+              add: (e) => {
+                if (mode === "subdivision") e.target.pm.enable();
+              },
+            }}
+          />
+          {currentBlock.predios?.map((predio, idx) => (
+             <GeoJSON
+                key={`preview-predio-${idx}`}
+                data={predio.geom}
+                pathOptions={{
+                  color: predio.tipo === 'FRONTAL' ? '#2ecc71' : '#e67e22',
+                  weight: 4
+                }}
+             />
+          ))}
+        </>
       )}
 
       {divisionPoints?.map((pt, idx) => (

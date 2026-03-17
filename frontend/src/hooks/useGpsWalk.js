@@ -9,6 +9,9 @@ export const useGpsWalk = () => {
   const [walkMode, setWalkMode] = useState('RECTA'); // 'RECTA' or 'CURVA'
   const [isWatching, setIsWatching] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isMappingHouse, setIsMappingHouse] = useState(false);
+  const [currentHouse, setCurrentHouse] = useState(null); // { startPathIdx, type, houseNumber }
+  const [housesInWalk, setHousesInWalk] = useState([]); // Array of { tipo, geom, numero_casa }
   const [error, setError] = useState(null);
   const [totalDistance, setTotalDistance] = useState(0);
   
@@ -219,10 +222,71 @@ export const useGpsWalk = () => {
     lastPointRef.current = { lat, lng };
   }, []);
 
+  const startMappingHouse = useCallback((type = 'FRONTAL', houseNumber = '') => {
+    if (!isWatching || isPaused) return;
+    
+    // Feedback Háptico: 1 pulso largo (100ms)
+    if (navigator.vibrate) {
+      navigator.vibrate(100);
+    }
+
+    setIsMappingHouse(true);
+    setCurrentHouse({
+      startPathIdx: path.length,
+      type,
+      houseNumber
+    });
+  }, [isWatching, isPaused, path.length]);
+
+  const toggleHouseType = useCallback(() => {
+    setCurrentHouse(prev => {
+      if (!prev) return null;
+      return { ...prev, type: prev.type === 'FRONTAL' ? 'ANCHO' : 'FRONTAL' };
+    });
+  }, []);
+
+  const finishMappingHouse = useCallback(() => {
+    if (!isMappingHouse || !currentHouse) return;
+
+    // Feedback Háptico: 2 pulsos cortos
+    if (navigator.vibrate) {
+      navigator.vibrate([50, 50, 50, 50]);
+    }
+
+    // Extraer puntos del rastro actual (path) para el lindero
+    // Empezamos desde startPathIdx hasta el punto actual
+    const housePoints = path.slice(currentHouse.startPathIdx);
+    
+    // Si no hay suficientes puntos en el path (ej: se detuvo justo al empezar), 
+    // al menos usamos la posición actual si existe
+    if (housePoints.length < 2 && currentPosition) {
+        // Podríamos manejar esto mejor, pero por ahora aseguramos integridad
+    }
+
+    if (housePoints.length >= 2) {
+      const houseGeom = {
+        type: 'LineString',
+        coordinates: housePoints.map(p => [p[1], p[0]]) // [lng, lat]
+      };
+
+      setHousesInWalk(prev => [...prev, {
+        tipo: currentHouse.type,
+        geom: houseGeom,
+        numero_casa: currentHouse.houseNumber
+      }]);
+    }
+
+    setIsMappingHouse(false);
+    setCurrentHouse(null);
+  }, [isMappingHouse, currentHouse, path, currentPosition]);
+
   const reset = useCallback(() => {
     setPath([]);
     setAnchors([]);
     setSegments([]);
+    setHousesInWalk([]);
+    setIsMappingHouse(false);
+    setCurrentHouse(null);
     setTotalDistance(0);
     setIsPaused(false);
     isPausedRef.current = false;
@@ -244,6 +308,9 @@ export const useGpsWalk = () => {
     setWalkMode,
     isWatching,
     isPaused,
+    isMappingHouse,
+    currentHouse,
+    housesInWalk,
     error,
     totalDistance,
     startWatch,
@@ -251,6 +318,9 @@ export const useGpsWalk = () => {
     togglePause,
     undoLastPoint,
     handleAnchorPoint,
+    startMappingHouse,
+    finishMappingHouse,
+    toggleHouseType,
     addManualPoint,
     addDrPoint,
     reset

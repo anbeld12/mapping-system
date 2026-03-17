@@ -27,8 +27,9 @@ function validateAndClose(coordinates) {
 }
 
 exports.createBlock = async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { name, geom, division_points, capture_method } = req.body;
+    const { name, geom, division_points, capture_method, predios = [], neighborhood_id } = req.body;
 
     if (!geom || geom.type !== "Polygon") {
       return res.status(400).json({ error: "Invalid geometry. GeoJSON Polygon required." });
@@ -39,25 +40,47 @@ exports.createBlock = async (req, res) => {
       return res.status(400).json({ error: "Self-intersecting or invalid polygon geometry." });
     }
 
-    await pool.query("BEGIN");
+    await client.query("BEGIN");
 
     const query = `
-      INSERT INTO blocks (name, geom, division_points, capture_method)
-      VALUES ($1, ST_GeomFromGeoJSON($2), $3, $4)
+      INSERT INTO blocks (name, geom, division_points, capture_method, neighborhood_id)
+      VALUES ($1, ST_GeomFromGeoJSON($2), $3, $4, $5)
       RETURNING id, ST_AsGeoJSON(geom)::jsonb as geom
     `;
 
-    const result = await pool.query(query, [
+    const result = await client.query(query, [
       name || "Nueva Cuadra",
       JSON.stringify(geom),
       JSON.stringify(division_points || []),
-      capture_method || 'manual'
+      capture_method || 'manual',
+      neighborhood_id
     ]);
 
     const blockId = result.rows[0].id;
     const insertedGeom = result.rows[0].geom;
 
-    // Generar casas automáticamente
+    // Guardar Predios (Fachadas/Anchos)
+    const savedPredios = [];
+    for (const predio of predios) {
+      if (!predio.geom || predio.geom.type !== "LineString") continue;
+      
+      const predioQuery = `
+        INSERT INTO predios (block_id, tipo, geom, numero_casa)
+        VALUES ($1, $2, ST_GeomFromGeoJSON($3), $4)
+        RETURNING id, tipo, ST_AsGeoJSON(geom)::jsonb as geom, numero_casa
+      `;
+      
+      const pResult = await client.query(predioQuery, [
+        blockId,
+        predio.tipo, // 'FRONTAL' | 'ANCHO'
+        JSON.stringify(predio.geom),
+        predio.numero_casa
+      ]);
+
+      savedPredios.push(pResult.rows[0]);
+    }
+
+    // Generar casas automáticamente si aplica (lógica previa mantenida)
     let generatedHouses = [];
     if (division_points && division_points.length >= 2) {
       const houseGeoms = generateHousesFromBlock(insertedGeom, division_points);
@@ -68,7 +91,7 @@ exports.createBlock = async (req, res) => {
           VALUES ($1, ST_GeomFromGeoJSON($2))
           RETURNING id, ST_AsGeoJSON(geom)::jsonb as geom
         `;
-        const hResult = await pool.query(houseQuery, [blockId, JSON.stringify(hGeom)]);
+        const hResult = await client.query(houseQuery, [blockId, JSON.stringify(hGeom)]);
         generatedHouses.push({
           id: hResult.rows[0].id,
           geometry: hResult.rows[0].geom
@@ -76,21 +99,24 @@ exports.createBlock = async (req, res) => {
       }
     }
 
-    await pool.query("COMMIT");
+    await client.query("COMMIT");
 
     res.json({
-      message: "Block and houses created",
+      message: "Block, predios and houses created",
       block: {
         id: blockId,
         geometry: insertedGeom
       },
+      predios: savedPredios,
       houses: generatedHouses
     });
 
   } catch (error) {
-    await pool.query("ROLLBACK");
-    console.error(error);
-    res.status(500).json({ error: "Error creating block and houses" });
+    await client.query("ROLLBACK");
+    console.error("Error creating block and predios:", error);
+    res.status(500).json({ error: "Error creating block and elements: " + error.message });
+  } finally {
+    client.release();
   }
 };
 
