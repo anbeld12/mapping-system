@@ -18,9 +18,9 @@ exports.syncChanges = async (req, res) => {
       const { operation, entity_type, entity_id, data } = change;
 
       if (entity_type === "block") {
+        const { name, geom, division_points, capture_method, neighborhood_id, predios = [] } = data;
+        
         if (operation === "INSERT") {
-          const { name, geom, division_points, capture_method, neighborhood_id } = data;
-          
           const query = `
             INSERT INTO blocks (id, name, geom, division_points, capture_method, neighborhood_id)
             VALUES ($1, $2, ST_GeomFromGeoJSON($3), $4, $5, $6)
@@ -37,7 +37,7 @@ exports.syncChanges = async (req, res) => {
             entity_id,
             name,
             JSON.stringify(geom),
-            JSON.stringify(division_points),
+            JSON.stringify(division_points || []),
             capture_method,
             neighborhood_id
           ]);
@@ -45,12 +45,24 @@ exports.syncChanges = async (req, res) => {
           const blockId = result.rows[0].id;
           const blockGeom = result.rows[0].geom;
 
-          // Si es un INSERT de bloque, también debemos manejar la regeneración de casas si vienen en el lote
-          // O si el cliente prefiere que el servidor las regenere:
+          if (predios && predios.length > 0) {
+            await client.query("DELETE FROM predios WHERE block_id = $1", [blockId]);
+            for (const predio of predios) {
+              const predioQuery = `
+                INSERT INTO predios (block_id, tipo, geom, numero_casa)
+                VALUES ($1, $2, ST_GeomFromGeoJSON($3), $4)
+              `;
+              await client.query(predioQuery, [
+                blockId,
+                predio.tipo,
+                JSON.stringify(predio.geom),
+                predio.numero_casa
+              ]);
+            }
+          }
+
           if (division_points && division_points.length >= 2) {
-            // Limpiar casas viejas si existen (para updates sobre conflictos)
             await client.query("DELETE FROM houses WHERE block_id = $1", [blockId]);
-            
             const houseGeoms = generateHousesFromBlock(blockGeom, division_points);
             for (const hGeom of houseGeoms) {
               await client.query(
@@ -59,12 +71,9 @@ exports.syncChanges = async (req, res) => {
               );
             }
           }
-
           results.push({ localId: entity_id, serverId: blockId, status: "success" });
         } 
         else if (operation === "UPDATE") {
-          const { name, geom, division_points } = data;
-          
           const query = `
             UPDATE blocks 
             SET name = COALESCE($1, name),
@@ -85,10 +94,7 @@ exports.syncChanges = async (req, res) => {
           if (result.rows.length > 0) {
             const blockId = result.rows[0].id;
             const blockGeom = result.rows[0].geom;
-
-            // Al actualizar la cuadra, regeneramos las casas para mantener consistencia
             await client.query("DELETE FROM houses WHERE block_id = $1", [blockId]);
-            
             if (division_points && division_points.length >= 2) {
               const houseGeoms = generateHousesFromBlock(blockGeom, division_points);
               for (const hGeom of houseGeoms) {

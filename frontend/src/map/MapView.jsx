@@ -63,6 +63,7 @@ export default function MapView() {
   const [currentBlock, setCurrentBlock] = useState(null);
   const [manualMode, setManualMode] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const mapRef = useRef(null);
 
   const walk = useGpsWalk();
@@ -188,6 +189,17 @@ export default function MapView() {
       return;
     }
 
+    // Validación de integridad de predios
+    const invalidHouses = housesInWalk.filter(h => h.geom.coordinates.length < 2);
+    if (invalidHouses.length > 0) {
+      toast({ 
+        title: "Error en Predios", 
+        description: `Hay ${invalidHouses.length} predios sin geometría suficiente.`,
+        variant: "destructive" 
+      });
+      return;
+    }
+
     // Leaflet [lat, lng] -> GeoJSON [lng, lat]
     let coords = allPoints.map((p) => [p[1], p[0]]);
     
@@ -214,7 +226,8 @@ export default function MapView() {
   };
 
   const handleSaveBlock = async () => {
-    if (!currentBlock) return;
+    if (!currentBlock || isSaving) return;
+    setIsSaving(true);
     const localId = crypto.randomUUID();
     const blockData = {
       id: localId,
@@ -243,12 +256,17 @@ export default function MapView() {
       });
       if (navigator.onLine) await syncManager.sync();
       toast({ title: "Guardado local", description: "La cuadra se guardó en cola de sincronización." });
+      
+      // Cleanup de sesión tras éxito
       setCurrentBlock(null);
       setDivisionPoints([]);
+      walk.reset(); // Limpia el hook useGpsWalk
       setMode("view");
       if (bbox) loadData(bbox);
     } catch (err) {
       toast({ title: "Error al guardar", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -417,8 +435,8 @@ export default function MapView() {
 
         {mode === "subdivision" && (
           <div className="flex items-center gap-1">
-            <Button size="sm" onClick={handleSaveBlock} className="bg-green-600 hover:bg-green-700 text-white h-10 md:h-9 text-xs">
-              💾 <span className="hidden xs:inline ml-1">Guardar</span>
+            <Button size="sm" onClick={handleSaveBlock} className="bg-green-600 hover:bg-green-700 text-white h-10 md:h-9 text-xs" disabled={isSaving}>
+              {isSaving ? "⌛ Enviando..." : "💾 Guardar"}
             </Button>
             <Button
               size="sm"

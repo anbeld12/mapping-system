@@ -1,26 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useToast } from '../hooks/use-toast';
-import { 
-  ChevronUp, 
-  ChevronDown, 
-  Pause, 
-  Play, 
-  Undo, 
-  MapPin, 
-  RotateCcw, 
-  CheckCircle2, 
-  Ruler,
-  AlertCircle,
-  Activity,
-  Maximize2,
-  Minimize2,
-  Spline,
-  LineChart,
-  Home,
-  Layout,
-  RectangleHorizontal,
-  ArrowRightLeft
-} from 'lucide-react';
+import { ChevronUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { Pause } from 'lucide-react';
+import { Play } from 'lucide-react';
+import { Undo } from 'lucide-react';
+import { MapPin } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+import { Ruler } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { Activity } from 'lucide-react';
+import { Maximize2 } from 'lucide-react';
+import { Minimize2 } from 'lucide-react';
+import { Spline } from 'lucide-react';
+import { LineChart } from 'lucide-react';
+import { Home } from 'lucide-react';
+import { Layout } from 'lucide-react';
+import { RectangleHorizontal } from 'lucide-react';
+import { ArrowRightLeft } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 
@@ -109,7 +107,7 @@ const GpsWalker = ({
   const toggleExpand = () => setIsExpanded(!isExpanded);
 
   return (
-    <div className={`relative w-full bg-white transition-all duration-500 ease-in-out ${isExpanded ? 'h-[75vh]' : 'h-28'}`}>
+    <div className={`relative w-full bg-white transition-all duration-500 ease-in-out ${isExpanded ? 'h-[75dvh]' : 'h-28'}`}>
       {/* Mobile Handle / Expand Area */}
       <div 
         className="flex flex-col items-center pt-2 pb-1 cursor-pointer"
