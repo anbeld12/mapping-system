@@ -1,0 +1,5 @@
+ia-env/
+db/
+*.sql
+*.bak
+README.md
