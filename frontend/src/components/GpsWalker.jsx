@@ -99,7 +99,7 @@ const GpsWalker = ({
   const toggleExpand = () => setIsExpanded(!isExpanded);
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 z-[1000] bg-white rounded-t-3xl shadow-[0_-8px_30px_rgb(0,0,0,0.12)] transition-all duration-500 ease-in-out border-t border-slate-100 ${isExpanded ? 'h-[75vh]' : 'h-24'}`}>
+    <div className={`relative w-full bg-white transition-all duration-500 ease-in-out ${isExpanded ? 'h-[75vh]' : 'h-28'}`}>
       {/* Mobile Handle / Expand Area */}
       <div 
         className="flex flex-col items-center pt-2 pb-1 cursor-pointer"
