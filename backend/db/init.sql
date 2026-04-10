@@ -10,6 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
 
 -- Limpiar esquema existente (Empieza desde cero)
 DROP TABLE IF EXISTS houses CASCADE;
+DROP TABLE IF EXISTS predios CASCADE;
 DROP TABLE IF EXISTS blocks CASCADE;
 DROP TABLE IF EXISTS neighborhoods CASCADE;
 DROP TABLE IF EXISTS pending_changes CASCADE;
@@ -84,6 +85,24 @@ COMMENT ON COLUMN houses.block_id IS 'Referencia a la cuadra contenedora. Borrad
 CREATE INDEX idx_houses_geom ON houses USING GIST (geom);
 CREATE INDEX idx_houses_block_id ON houses (block_id);
 CREATE INDEX idx_houses_synced_at ON houses (synced_at);
+
+-- ==========================================
+-- Tabla: predios
+-- Almacena las fachadas y anchos asociados a las cuadras
+-- ==========================================
+CREATE TABLE predios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
+    tipo VARCHAR(50) NOT NULL,
+    geom GEOMETRY(LINESTRING, 4326) NOT NULL,
+    numero_casa INTEGER,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+COMMENT ON TABLE predios IS 'Almacena líneas de fachada o ancho, asociadas a una cuadra.';
+
+CREATE INDEX idx_predios_geom ON predios USING GIST (geom);
+CREATE INDEX idx_predios_block_id ON predios (block_id);
 
 -- ==========================================
 -- Tabla: pending_changes

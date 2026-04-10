@@ -144,8 +144,38 @@ exports.syncChanges = async (req, res) => {
           await client.query("DELETE FROM neighborhoods WHERE id = $1", [entity_id]);
           results.push({ localId: entity_id, status: "deleted" });
         }
+      } else if (entity_type === "house") {
+        if (operation === "INSERT") {
+          const { block_id, geom, house_number } = data;
+          const query = `
+            INSERT INTO houses (id, block_id, geom, house_number)
+            VALUES ($1, $2, ST_GeomFromGeoJSON($3), $4)
+            ON CONFLICT (id) DO UPDATE SET
+              block_id = EXCLUDED.block_id,
+              geom = EXCLUDED.geom,
+              house_number = EXCLUDED.house_number,
+              updated_at = now()
+            RETURNING id
+          `;
+          await client.query(query, [entity_id, block_id, JSON.stringify(geom), house_number || null]);
+          results.push({ localId: entity_id, status: "success" });
+        } else if (operation === "UPDATE") {
+          const { block_id, geom, house_number } = data;
+          const query = `
+            UPDATE houses
+            SET block_id = COALESCE($1, block_id),
+                geom = CASE WHEN $2::jsonb IS NOT NULL THEN ST_GeomFromGeoJSON($2) ELSE geom END,
+                house_number = COALESCE($3, house_number),
+                updated_at = now()
+            WHERE id = $4
+          `;
+          await client.query(query, [block_id, JSON.stringify(geom), house_number || null, entity_id]);
+          results.push({ localId: entity_id, status: "updated" });
+        } else if (operation === "DELETE") {
+          await client.query("DELETE FROM houses WHERE id = $1", [entity_id]);
+          results.push({ localId: entity_id, status: "deleted" });
+        }
       }
-      // Se pueden añadir más entidades aquí (e.g. houses directas si se requiere)
     }
 
     await client.query("COMMIT");

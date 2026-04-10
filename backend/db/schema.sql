@@ -31,6 +31,16 @@ CREATE TABLE IF NOT EXISTS houses (
     synced_at TIMESTAMPTZ
 );
 
+-- Tabla: predios
+CREATE TABLE IF NOT EXISTS predios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
+    tipo VARCHAR(50) NOT NULL,
+    geom GEOMETRY(LINESTRING, 4326) NOT NULL,
+    numero_casa INTEGER,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Tabla: pending_changes
 CREATE TABLE IF NOT EXISTS pending_changes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -48,4 +58,6 @@ CREATE INDEX IF NOT EXISTS idx_houses_geom ON houses USING GIST (geom);
 CREATE INDEX IF NOT EXISTS idx_houses_block_id ON houses (block_id);
 CREATE INDEX IF NOT EXISTS idx_blocks_synced_at ON blocks (synced_at);
 CREATE INDEX IF NOT EXISTS idx_houses_synced_at ON houses (synced_at);
+CREATE INDEX IF NOT EXISTS idx_predios_block_id ON predios (block_id);
+
 CREATE INDEX IF NOT EXISTS idx_pending_changes_synced ON pending_changes (synced);

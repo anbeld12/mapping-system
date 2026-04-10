@@ -4,7 +4,7 @@ const { generateHousesFromBlock } = require("../services/houseGeneration");
 
 exports.generateHouses = async (req, res) => {
   try {
-    const blockId = Number(req.body.block_id);
+    const blockId = req.body.block_id;
     const houseCount = Number(req.body.house_count);
 
     if (!blockId || !houseCount || houseCount < 1) {
@@ -85,7 +85,7 @@ exports.generateHouses = async (req, res) => {
 
 exports.generateHousesByWidth = async (req, res) => {
   try {
-    const blockId = Number(req.body.block_id);
+    const blockId = req.body.block_id;
     const lotWidth = Number(req.body.lot_width);
 
     if (!blockId || !lotWidth || lotWidth <= 0) {
@@ -214,5 +214,28 @@ exports.getHouses = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error fetching houses" });
+  }
+};
+
+exports.createHouse = async (req, res) => {
+  try {
+    const { block_id, geom, house_number } = req.body;
+
+    if (!block_id || !geom) {
+      return res.status(400).json({ error: "block_id and geom are required" });
+    }
+
+    const insertQuery = `
+      INSERT INTO houses (block_id, geom, house_number)
+      VALUES ($1, ST_GeomFromGeoJSON($2), $3)
+      RETURNING id, block_id, ST_AsGeoJSON(geom)::jsonb as geometry, house_number
+    `;
+
+    const result = await pool.query(insertQuery, [block_id, JSON.stringify(geom), house_number || null]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error creating house:", error);
+    res.status(500).json({ error: "Error creating house" });
   }
 };
