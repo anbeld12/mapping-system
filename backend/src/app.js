@@ -32,12 +32,15 @@ app.get('/api', (req, res) => res.status(200).json({ status: 'API OK', role: 'ap
 
 // Swagger UI
 
-// Configuración especial para que Swagger UI cargue el CSS correctamente en Vercel
-const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css";
+// Configuración premium para Swagger UI en Vercel (Serverless)
+// Usamos CDNs para JS y CSS para evitar problemas con archivos estáticos en node_modules
+const options = {
+  customCssUrl: "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css",
+  customJs: "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js",
+  customSiteTitle: "Mapping System API - Docs",
+};
 
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-  customCssUrl: CSS_URL
-}));
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, options));
 
 app.use("/api/blocks", blockRoutes);
 app.use("/api/houses", houseRoutes);
