@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const swaggerUi = require("swagger-ui-express");
-const YAML = require("yamljs");
+const swaggerDocument = require("./config/swagger");
 const path = require("path");
 
 const blockRoutes = require("./routes/blockRoutes");
@@ -31,7 +31,6 @@ app.get('/', (req, res) => res.status(200).json({ status: 'API OK', role: 'root'
 app.get('/api', (req, res) => res.status(200).json({ status: 'API OK', role: 'api-root' }));
 
 // Swagger UI
-const swaggerDocument = YAML.load(path.join(__dirname, "../swagger.yaml"));
 
 // Configuración especial para que Swagger UI cargue el CSS correctamente en Vercel
 const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css";

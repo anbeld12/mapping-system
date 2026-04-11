@@ -1,0 +1,325 @@
+module.exports = {
+  openapi: "3.0.0",
+  info: {
+    title: "Mapping System API",
+    version: "1.0.0",
+    description: "API para el sistema de mapeo de casas, cuadras y barrios."
+  },
+  servers: [
+    {
+      url: "/api",
+      description: "Base URL"
+    }
+  ],
+  paths: {
+    "/": {
+      get: {
+        summary: "Health Check (API root)",
+        responses: {
+          "200": {
+            description: "API is running"
+          }
+        }
+      }
+    },
+    "/neighborhoods": {
+      get: {
+        summary: "Obtener lista de barrios",
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/Neighborhood"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blocks": {
+      get: {
+        summary: "Obtener todas las cuadras",
+        parameters: [
+          {
+            in: "query",
+            name: "neighborhood_id",
+            schema: {
+              type: "string",
+              format: "uuid"
+            },
+            description: "Filtrar cuadras por barrio (opcional)"
+          }
+        ],
+        responses: {
+          "200": {
+            description: "Lista de cuadras"
+          }
+        }
+      },
+      post: {
+        summary: "Crear una nueva cuadra (block)",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  name: {
+                    type: "string"
+                  },
+                  geometry: {
+                    type: "object",
+                    description: "GeoJSON Polygon"
+                  },
+                  neighborhood_id: {
+                    type: "string",
+                    format: "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          "201": {
+            description: "Cuadra creada",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/Block"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/houses": {
+      get: {
+        summary: "Obtener viviendas por cuadra",
+        parameters: [
+          {
+            in: "query",
+            name: "block_id",
+            required: true,
+            schema: {
+              type: "string",
+              format: "uuid"
+            }
+          }
+        ],
+        responses: {
+          "200": {
+            description: "Lista de casas"
+          }
+        }
+      },
+      post: {
+        summary: "Crear una nueva vivienda independiente",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  house_number: {
+                    type: "string"
+                  },
+                  geometry: {
+                    type: "object"
+                  },
+                  block_id: {
+                    type: "string",
+                    format: "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          "201": {
+            description: "Vivienda creada"
+          }
+        }
+      }
+    },
+    "/map/data": {
+      get: {
+        summary: "Obtener todos los datos geoespaciales para el mapa",
+        parameters: [
+          {
+            in: "query",
+            name: "bbox",
+            schema: {
+              type: "string"
+            },
+            description: "Bounding box en formato minX,minY,maxX,maxY"
+          }
+        ],
+        responses: {
+          "200": {
+            description: "GeoJSON FeatureCollection de bloques y casas"
+          }
+        }
+      }
+    },
+    "/export": {
+      get: {
+        summary: "Exportar datos en CSV o GeoJSON",
+        parameters: [
+          {
+            in: "query",
+            name: "format",
+            schema: {
+              type: "string",
+              enum: ["csv", "geojson"]
+            }
+          },
+          {
+            in: "query",
+            name: "bbox",
+            schema: {
+              type: "string"
+            }
+          }
+        ],
+        responses: {
+          "200": {
+            description: "Archivo exportado"
+          }
+        }
+      }
+    },
+    "/export/report": {
+      get: {
+        summary: "Generar un reporte estadístico en PDF",
+        responses: {
+          "200": {
+            description: "Archivo PDF",
+            content: {
+              "application/pdf": {
+                schema: {
+                  type: "string",
+                  format: "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync": {
+      post: {
+        summary: "Sincronizar cambios offline",
+        description: "Envía los cambios locales al servidor.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  changes: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: {
+                          type: "string",
+                          format: "uuid"
+                        },
+                        type: {
+                          type: "string",
+                          enum: ["CREATE", "UPDATE", "DELETE"]
+                        },
+                        entity: {
+                          type: "string",
+                          enum: ["block", "house", "neighborhood"]
+                        },
+                        data: {
+                          type: "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          "200": {
+            description: "Cambios sincronizados",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: {
+                      type: "boolean"
+                    },
+                    processed: {
+                      type: "integer"
+                    },
+                    failed: {
+                      type: "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  components: {
+    schemas: {
+      Block: {
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+            format: "uuid"
+          },
+          name: {
+            type: "string"
+          },
+          neighborhood_id: {
+            type: "string",
+            format: "uuid"
+          },
+          created_at: {
+            type: "string",
+            format: "date-time"
+          }
+        }
+      },
+      Neighborhood: {
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+            format: "uuid"
+          },
+          name: {
+            type: "string"
+          },
+          created_at: {
+            type: "string",
+            format: "date-time"
+          }
+        }
+      }
+    }
+  }
+};
