@@ -1,5 +1,7 @@
 const pool = require("../config/database");
-const turf = require("@turf/turf");
+const { lineString } = require("@turf/helpers");
+const length = require("@turf/length").default;
+const along = require("@turf/along").default;
 const { generateHousesFromBlock } = require("../services/houseGeneration");
 
 exports.generateHouses = async (req, res) => {
@@ -36,14 +38,14 @@ exports.generateHouses = async (req, res) => {
         throw new Error("Block has too few vertices to subdivide.");
       }
 
-      const frontLine = turf.lineString([outerRing[0], outerRing[1]]);
-      const totalLen = turf.length(frontLine, { units: "kilometers" });
+      const frontLine = lineString([outerRing[0], outerRing[1]]);
+      const totalLen = length(frontLine, { units: "kilometers" });
       const segLen = totalLen / houseCount;
 
       // Build N+1 equally spaced division points along the first two vertices
       const divisionPoints = [];
       for (let i = 0; i <= houseCount; i++) {
-        const pt = turf.along(frontLine, segLen * i, { units: "kilometers" });
+        const pt = along(frontLine, segLen * i, { units: "kilometers" });
         divisionPoints.push(pt.geometry.coordinates);
       }
 
@@ -118,8 +120,8 @@ exports.generateHousesByWidth = async (req, res) => {
         throw new Error("Invalid block geometry. Expected GeoJSON Polygon.");
       }
       const outerRing = blockGeoJSON.coordinates[0];
-      const frontLine = turf.lineString([outerRing[0], outerRing[1]]);
-      const lengthKm = turf.length(frontLine, { units: "kilometers" });
+      const frontLine = lineString([outerRing[0], outerRing[1]]);
+      const lengthKm = length(frontLine, { units: "kilometers" });
       const houseCount = Math.floor((lengthKm * 1000) / lotWidth);
 
       if (houseCount < 1) {
@@ -129,7 +131,7 @@ exports.generateHousesByWidth = async (req, res) => {
       const segLen = lengthKm / houseCount;
       const divisionPoints = [];
       for (let i = 0; i <= houseCount; i++) {
-        const pt = turf.along(frontLine, segLen * i, { units: "kilometers" });
+        const pt = along(frontLine, segLen * i, { units: "kilometers" });
         divisionPoints.push(pt.geometry.coordinates);
       }
 

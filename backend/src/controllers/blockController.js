@@ -1,5 +1,6 @@
 const pool = require("../config/database");
-const turf = require("@turf/turf");
+const { polygon } = require("@turf/helpers");
+const booleanValid = require("@turf/boolean-valid").default;
 const { generateHousesFromBlock } = require("../services/houseGeneration");
 
 // Helper to ensure first and last points are identical
@@ -19,8 +20,8 @@ function ensureClosedPolygon(coordinates) {
 
 function validateAndClose(coordinates) {
   const closed = ensureClosedPolygon(coordinates);
-  const poly = turf.polygon(closed);
-  if (!turf.booleanValid(poly)) {
+  const poly = polygon(closed);
+  if (!booleanValid(poly)) {
     throw new Error("Invalid polygon geometry (self-intersecting or too few points)");
   }
   return closed;
@@ -36,7 +37,7 @@ exports.createBlock = async (req, res) => {
     }
 
     // Validar geometría con Turf
-    if (!turf.booleanValid(geom)) {
+    if (!booleanValid(geom)) {
       return res.status(400).json({ error: "Self-intersecting or invalid polygon geometry." });
     }
 
@@ -121,9 +122,7 @@ exports.createBlock = async (req, res) => {
 };
 
 exports.getBlocks = async (req, res) => {
-
   try {
-
     const query = `
       SELECT
         id,
@@ -143,13 +142,9 @@ exports.getBlocks = async (req, res) => {
     res.json(blocks);
 
   } catch (error) {
-
     console.error(error);
-
     res.status(500).json({
       error: "Error fetching blocks"
     });
-
   }
-
 };
