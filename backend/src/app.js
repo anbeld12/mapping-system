@@ -23,12 +23,22 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
+// Health check routes
+app.get('/', (req, res) => res.status(200).json({ status: 'API OK', role: 'root' }));
+app.get('/api', (req, res) => res.status(200).json({ status: 'API OK', role: 'api-root' }));
+
 app.use("/api/blocks", blockRoutes);
 app.use("/api/houses", houseRoutes);
 app.use("/api/map", mapRoutes);
 app.use("/api/sync", syncRoutes);
 app.use("/api/neighborhoods", neighborhoodRoutes);
 app.use("/api/export", exportRoutes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: "Internal Server Error", details: err.message });
+});
 
 module.exports = app;
 

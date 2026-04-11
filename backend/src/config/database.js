@@ -2,8 +2,7 @@ const { Pool } = require("pg");
 require("dotenv").config();
 
 if (!process.env.DATABASE_URL) {
-  console.error("CRITICAL ERROR: DATABASE_URL environment variable is not defined.");
-  process.exit(1);
+  console.error("CRITICAL ERROR: DATABASE_URL environment variable is not defined. Database connection will fail.");
 }
 
 const pool = new Pool({
@@ -14,10 +13,8 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-// Test connection on startup (optional but helpful in serverless logs)
 pool.on('error', (err) => {
   console.error('Unexpected error on idle client', err);
-  process.exit(-1);
 });
 
 module.exports = pool;
