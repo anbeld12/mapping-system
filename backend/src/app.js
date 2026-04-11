@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
+const path = require("path");
 
 const blockRoutes = require("./routes/blockRoutes");
 const houseRoutes = require("./routes/houseRoutes");
@@ -26,6 +29,16 @@ app.use(express.json({ limit: '10mb' }));
 // Health check routes
 app.get('/', (req, res) => res.status(200).json({ status: 'API OK', role: 'root' }));
 app.get('/api', (req, res) => res.status(200).json({ status: 'API OK', role: 'api-root' }));
+
+// Swagger UI
+const swaggerDocument = YAML.load(path.join(__dirname, "../swagger.yaml"));
+
+// Configuración especial para que Swagger UI cargue el CSS correctamente en Vercel
+const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css";
+
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  customCssUrl: CSS_URL
+}));
 
 app.use("/api/blocks", blockRoutes);
 app.use("/api/houses", houseRoutes);
